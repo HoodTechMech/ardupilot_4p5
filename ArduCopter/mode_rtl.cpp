@@ -17,8 +17,15 @@ bool ModeRTL::init(bool ignore_checks)
             return false;
         }
     }
+
+    // set speed to current speed bypassing accel logic in AC_WPNav because we are already going this speed
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init(g.rtl_speed_cms);
+    Vector3f curr_vel = copter.inertial_nav.get_velocity();
+    float vel_total = norm(curr_vel.x, curr_vel.y);
+
+    // initialise waypoint and spline controller
+    wp_nav->wp_and_spline_init(vel_total);
+    
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
