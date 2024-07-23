@@ -493,6 +493,8 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("ADSB",   9, GCS_MAVLINK_Parameters, streamRates[9],  0),
+
+    AP_GROUPINFO("VERBOSE", 10, GCS_MAVLINK_Parameters, verbose_mode, 0),
 AP_GROUPEND
 };
 

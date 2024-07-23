@@ -85,6 +85,26 @@ void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
 }
 
+// HOODTECH MOD -losh 220905.
+// Send verbose text sends text to GCS/HUD only if the parameter is set.
+void GCS::send_verbose_text(MAV_SEVERITY severity, const char *fmt, ...)
+{
+    bool printit = false; 
+    for (uint8_t ii=0; ii<ARRAY_SIZE(GCS::chan_parameters); ii++){
+        if (severity == GCS::chan_parameters[ii].verbose_mode)
+        {
+            printit=true;
+            break ; 
+        }
+    }
+    if (printit)    {
+        va_list arg_list;
+        va_start(arg_list, fmt);
+        send_textv(severity, fmt, arg_list);
+        va_end(arg_list);
+    }
+}
+
 void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
 {
     const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);

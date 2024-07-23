@@ -134,6 +134,7 @@ GCS_MAVLINK::GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters,
     _port = &uart;
 
     streamRates = parameters.streamRates;
+    verbose_mode = parameters.verbose_mode;
 }
 
 bool GCS_MAVLINK::init(uint8_t instance)
@@ -820,6 +821,15 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
     va_start(arg_list, fmt);
     gcs().send_textv(severity, fmt, arg_list, (1<<chan));
     va_end(arg_list);
+}
+
+// SEND_VERBOSE_TEXT: send text to hud based on param.
+void GCS_MAVLINK::send_verbose_text(MAV_SEVERITY severity, const char *fmt, ... )
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    gcs().send_verbose_text( severity, fmt, arg_list);
+        va_end(arg_list);
 }
 
 float GCS_MAVLINK::telemetry_radio_rssi()

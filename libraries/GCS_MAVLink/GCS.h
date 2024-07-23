@@ -114,6 +114,7 @@ public:
 
     // saveable rate of each stream
     AP_Int16        streamRates[GCS_MAVLINK_NUM_STREAM_RATES];
+    AP_Int8         verbose_mode;
 };
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
@@ -204,6 +205,7 @@ public:
     bool        init(uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...) const FMT_PRINTF(3, 4);
+    void        send_verbose_text(MAV_SEVERITY severity, const char *fmt, ...);
     void        queued_param_send();
     void        queued_mission_request_send();
 
@@ -513,6 +515,7 @@ protected:
 
     // saveable rate of each stream
     AP_Int16        *streamRates;
+    AP_Int8         verbose_mode;
 
     void handle_heartbeat(const mavlink_message_t &msg) const;
 
@@ -1181,6 +1184,7 @@ public:
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t mask);
+    void send_verbose_text(MAV_SEVERITY severity, const char *fmt, ...);
     uint8_t statustext_send_channel_mask() const;
 
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
