@@ -163,7 +163,7 @@
 #endif
 
 #ifndef HAL_NUM_CAN_IFACES
-#define HAL_NUM_CAN_IFACES 0
+#define HAL_NUM_CAN_IFACES 2
 #endif
 
 #ifndef HAL_WITH_IO_MCU

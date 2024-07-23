@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @Description: Bitmask defining which ESC (motor) channels are to be transmitted over Piccolo CAN
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
     // @User: Advanced
-    AP_GROUPINFO("ESC_BM", 1, AP_PiccoloCAN, _esc_bm, 0xFFFF),
+    AP_GROUPINFO("ESC_BM", 1, AP_PiccoloCAN, _esc_bm, 0x0000),
 
     // @Param: ESC_RT
     // @DisplayName: ESC output rate
@@ -214,17 +214,20 @@ void AP_PiccoloCAN::loop()
         // 1ms loop delay
         hal.scheduler->delay_microseconds(1000);
 
-        // Transmit ESC commands at regular intervals
-        if (esc_tx_counter++ > escCmdRateMs) {
-            esc_tx_counter = 0;
-            send_esc_messages();
+        if(false) {
+            // Transmit ESC commands at regular intervals
+            if (esc_tx_counter++ > escCmdRateMs) {
+                esc_tx_counter = 0;
+                send_esc_messages();
+            }
+
+            // Transmit servo commands at regular intervals
+            if (servo_tx_counter++ > servoCmdRateMs) {
+                servo_tx_counter = 0;
+                send_servo_messages();
+            }  
         }
 
-        // Transmit servo commands at regular intervals
-        if (servo_tx_counter++ > servoCmdRateMs) {
-            servo_tx_counter = 0;
-            send_servo_messages();
-        }
 
 #if AP_EFI_CURRAWONG_ECU_ENABLED
         // Transmit ecu throttle commands at regular intervals
