@@ -21,11 +21,12 @@ bool ModeRTL::init(bool ignore_checks)
     // HOOD MOD.
     // set speed to current speed bypassing accel logic in AC_WPNav because we are already going this speed
     // initialise waypoint and spline controller
-    Vector3f curr_vel = copter.inertial_nav.get_velocity_neu_cms();
-    float vel_total = norm(curr_vel.x, curr_vel.y);
+
+    // collect the xy velocity components of current vel.
+    Vector2f xy_vel = copter.inertial_nav.get_velocity_neu_cms().xy();
 
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init(vel_total);
+    wp_nav->wp_and_spline_init(xy_vel.length());
 
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
@@ -131,6 +132,20 @@ void ModeRTL::run(bool disarm_on_land)
     case SubMode::LAND:
         land_run(disarm_on_land);
         break;
+    }
+
+    static uint32_t last_log_time=0;
+    if((millis()-last_log_time)>100){
+        //Logging
+        AP::logger().Write( "RTL",
+                            "TimeUS,st,wp_d",
+                            "s-m",
+                            "F0B",
+                            "Qhf",
+                            AP_HAL::micros64(),
+                            (int16_t)_state,
+                            wp_nav->get_wp_distance_to_destination()  );
+        last_log_time = millis();
     }
 }
 
@@ -524,13 +539,15 @@ void ModeRTL::compute_return_target()
     // ensure we do not descend
     rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
 
-    // //HOOD MOD
-    // // set RTL target to be RTL_OFFSET in front of copter location at arming.
-    // // vector to hold offsets 
-    // Vector3f rtl_off ; 
-    // rtl_off.x = g.rtl_offset * 
-    // rtl_path.return_target.offset()
-    // offset(g.rtl_alt_final)
+    //HOOD MOD
+    // set RTL target to be RTL_OFFSET in front of copter location at arming.
+    // vector to hold offsets 
+    Vector3p rtl_off(g.rtl_offset_m * copter.simple_cos_yaw,g.rtl_offset_m * copter.simple_sin_yaw, 0 ) ; 
+
+    rtl_path.return_target.offset(rtl_off) ;
+
+    if(g.rtl_offset_m != RTL_OFFSET_M) gcs().send_text(MAV_SEVERITY_WARNING, " RTL Offset: %dm", (int)g.rtl_offset_m);
+
 }
 
 bool ModeRTL::get_wp(Location& destination) const
