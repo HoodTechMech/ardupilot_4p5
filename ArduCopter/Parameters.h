@@ -202,6 +202,11 @@ public:
         k_param_circle_nav,
         k_param_loiter_nav,     // 105
         k_param_custom_control,
+        k_param_rtl_offset_m,     //107
+        k_param_dash_angle_cdeg,     //108
+        k_param_rtl_slow_down_dist_m,   //109
+
+
 
         // 110: Telemetry control
         //
@@ -405,6 +410,8 @@ public:
     AP_Int16        rtl_alt_final;
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
     AP_Int32        rtl_loiter_time;
+    AP_Int8         rtl_offset_m;                 // rtl offset in meters from original arming pt.
+    AP_Int16        rtl_slow_down_dist_m;       // rtl: dist in meters from rtl pt to start slowing down.
     AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif
 

@@ -155,6 +155,24 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Relative to Home, 1:Terrain
     // @User: Standard
     GSCALAR(rtl_alt_type, "RTL_ALT_TYPE", 0),
+
+    // @Param: RTL_OFFSET_M
+    // @DisplayName: RTL Offset 
+    // @Description: RTL Offset.  distance in front of takeoff point that copter will land when returning in RTL
+    // @Units: m
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(rtl_offset_m, "RTL_OFFSET_M", RTL_OFFSET_M),
+
+    // @Param: RTL_SLOW_DOWN_DIST_M
+    // @DisplayName: RTL Offset 
+    // @Description: RTL Offset.  distance in front of takeoff point that copter will land when returning in RTL
+    // @Units: m
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(rtl_slow_down_dist_m, "RTL_SLOW_DOWN_DIST_M", RTL_SLOW_DOWN_DIST_M),  
+
+
 #endif
 
     // @Param: FS_GCS_ENABLE
@@ -353,6 +371,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
+
+    // @Param: DASH ANGLE
+    // @DisplayName: Dash Angle
+    // @Description: Angle limit in AltHold
+    // @Units: cdeg
+    // @Increment: 10
+    // @Range: 1000 4500
+    // @User: Advanced
+    ASCALAR(dash_angle_cdeg, "DASH_ANGLE_CDEG",                 DEFAULT_DASH_ANGLE),    
 
 #if MODE_POSHOLD_ENABLED == ENABLED
     // @Param: PHLD_BRAKE_RATE

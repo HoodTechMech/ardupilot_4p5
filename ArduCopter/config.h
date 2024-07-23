@@ -432,6 +432,14 @@
  # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
 #endif
 
+#ifndef RTL_SLOW_DOWN_DIST_M
+ # define RTL_SLOW_DOWN_DIST_M      50
+#endif
+
+#ifndef RTL_OFFSET_M
+ # define RTL_OFFSET_M              7
+#endif
+
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
  # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
@@ -455,7 +463,9 @@
 #ifndef DEFAULT_ANGLE_MAX
  # define DEFAULT_ANGLE_MAX         3000            // ANGLE_MAX parameters default value
 #endif
-
+#ifndef DEFAULT_DASH_ANGLE
+ # define DEFAULT_DASH_ANGLE      1800
+#endif
 //////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
 //
