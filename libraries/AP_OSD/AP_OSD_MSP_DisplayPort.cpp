@@ -20,7 +20,7 @@
 #include <AP_MSP/msp.h>
 #include "AP_OSD_MSP_DisplayPort.h"
 
-#if HAL_WITH_MSP_DISPLAYPORT
+#if HAL_WITH_MSP_DISPLAYPORT && OSD_ENABLED
 
 #include <GCS_MAVLink/GCS.h>
 

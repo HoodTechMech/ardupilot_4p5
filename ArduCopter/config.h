@@ -123,7 +123,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Parachute release
 #ifndef PARACHUTE
- # define PARACHUTE HAL_PARACHUTE_ENABLED
+ # define PARACHUTE DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -135,7 +135,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Acro - fly vehicle in acrobatic mode
 #ifndef MODE_ACRO_ENABLED
-# define MODE_ACRO_ENABLED ENABLED
+# define MODE_ACRO_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Brake mode - bring vehicle to stop
 #ifndef MODE_BRAKE_ENABLED
-# define MODE_BRAKE_ENABLED ENABLED
+# define MODE_BRAKE_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -159,13 +159,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // Drift - fly vehicle in altitude-held, coordinated-turn mode
 #ifndef MODE_DRIFT_ENABLED
-# define MODE_DRIFT_ENABLED ENABLED
+# define MODE_DRIFT_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // flip - fly vehicle in flip in pitch and roll direction mode
 #ifndef MODE_FLIP_ENABLED
-# define MODE_FLIP_ENABLED ENABLED
+# define MODE_FLIP_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -211,7 +211,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // SmartRTL - allows vehicle to retrace a (loop-eliminated) breadcrumb home
 #ifndef MODE_SMARTRTL_ENABLED
-# define MODE_SMARTRTL_ENABLED ENABLED
+# define MODE_SMARTRTL_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -287,22 +287,22 @@
 //
 
 #ifndef FLIGHT_MODE_1
- # define FLIGHT_MODE_1                  Mode::Number::STABILIZE
+ # define FLIGHT_MODE_1                  Mode::Number::ALT_HOLD
 #endif
 #ifndef FLIGHT_MODE_2
- # define FLIGHT_MODE_2                  Mode::Number::STABILIZE
+ # define FLIGHT_MODE_2                  Mode::Number::ALT_HOLD
 #endif
 #ifndef FLIGHT_MODE_3
- # define FLIGHT_MODE_3                  Mode::Number::STABILIZE
+ # define FLIGHT_MODE_3                  Mode::Number::LOITER
 #endif
 #ifndef FLIGHT_MODE_4
- # define FLIGHT_MODE_4                  Mode::Number::STABILIZE
+ # define FLIGHT_MODE_4                  Mode::Number::LOITER
 #endif
 #ifndef FLIGHT_MODE_5
- # define FLIGHT_MODE_5                  Mode::Number::STABILIZE
+ # define FLIGHT_MODE_5                  Mode::Number::RTL
 #endif
 #ifndef FLIGHT_MODE_6
- # define FLIGHT_MODE_6                  Mode::Number::STABILIZE
+ # define FLIGHT_MODE_6                  Mode::Number::RTL
 #endif
 
 

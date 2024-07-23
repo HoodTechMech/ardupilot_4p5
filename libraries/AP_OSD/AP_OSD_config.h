@@ -4,7 +4,7 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 
 #ifndef OSD_ENABLED
-#define OSD_ENABLED 1
+#define OSD_ENABLED 0
 #endif
 
 #ifndef HAL_WITH_OSD_BITMAP
@@ -12,11 +12,11 @@
 #endif
 
 #ifndef OSD_PARAM_ENABLED
-#define OSD_PARAM_ENABLED 1
+#define OSD_PARAM_ENABLED OSD_ENABLED
 #endif
 
 #ifndef HAL_OSD_SIDEBAR_ENABLE
-#define HAL_OSD_SIDEBAR_ENABLE 1
+#define HAL_OSD_SIDEBAR_ENABLE OSD_ENABLED
 #endif
 
 #ifndef AP_OSD_CALLSIGN_FROM_SD_ENABLED

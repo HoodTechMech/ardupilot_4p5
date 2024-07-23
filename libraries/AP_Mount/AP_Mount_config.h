@@ -4,7 +4,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 
 #ifndef HAL_MOUNT_ENABLED
-#define HAL_MOUNT_ENABLED 1
+#define HAL_MOUNT_ENABLED 0
 #endif
 
 #define AP_MOUNT_BACKEND_DEFAULT_ENABLED HAL_MOUNT_ENABLED

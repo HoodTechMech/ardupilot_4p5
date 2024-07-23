@@ -125,9 +125,9 @@
  # include <AP_RangeFinder/AP_RangeFinder.h>
 #endif
 
-#include <AP_Mount/AP_Mount.h>
 
-#include <AP_Camera/AP_Camera.h>
+ #include <AP_Mount/AP_Mount.h>
+ #include <AP_Camera/AP_Camera.h>
 
 #if HAL_BUTTON_ENABLED
  # include <AP_Button/AP_Button.h>
