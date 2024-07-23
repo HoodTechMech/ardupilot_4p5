@@ -1,6 +1,5 @@
 #include "Copter.h"
 
-
 /*
  * Init and run calls for althold, flight mode
  */
@@ -18,6 +17,9 @@ bool ModeAltHold::init(bool ignore_checks)
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
+    // Turn blower on if copter is armed.
+    // if(motors->armed()) g2.ht_launch.blower_on(); // LOSHTODO
+
     return true;
 }
 
@@ -33,7 +35,7 @@ void ModeAltHold::run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.dash_angle_cdeg, attitude_control->get_althold_lean_angle_max_cd());
 
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
