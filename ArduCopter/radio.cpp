@@ -122,7 +122,8 @@ void Copter::read_radio()
     set_failsafe_radio(true);
 }
 
-#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
+// FS_COUNTER was nominally 3 in the code, but we found that triggered too fast for HRI yellow remotes. changed to 49 on 230420
+#define FS_COUNTER 49        // radio failsafe kicks in after 49 consecutive throttle values below failsafe_throttle_value
 void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
@@ -138,7 +139,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
             return;
         }
 
-        // check for 3 low throttle values
+        // check for FS_COUNTER low throttle values
         // Note: we do not pass through the low throttle until 3 low throttle values are received
         failsafe.radio_counter++;
         if( failsafe.radio_counter >= FS_COUNTER ) {
