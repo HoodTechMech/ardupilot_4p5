@@ -603,6 +603,11 @@ AP_BattMonitor::init()
             case Type::Scripting:
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_Scripting(*this, state[instance], _params[instance]);
                 break;
+#if HAL_NUM_CAN_IFACES>0
+            case Type::PiccoloCAN_BattMon:
+                //drivers[instance] = NEW_NOTHROW AP_BattMonitor_
+            break;
+#endif
 #endif // AP_BATTERY_SCRIPTING_ENABLED
             case Type::NONE:
             default:
@@ -1175,6 +1180,66 @@ bool AP_BattMonitor::handle_scripting(uint8_t idx, const BattMonitorScript_State
     return drivers[idx]->handle_scripting(_state);
 }
 #endif
+
+
+//HOODTECH MOD, losh 221215
+// adding ability to derate battery capacity based on voltage at arming.
+// Should only be used when not under load.
+void AP_BattMonitor::set_derated_battery_capacity( void )
+{
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        //de-rating is only for PiccoloCAN (FLARESX) and not x8, so determine type first
+        switch (allocated_type(i))
+        {
+            case Type::PiccoloCAN_BattMon:
+                 state[i].deRatedCapacityPercent = capacity_based_on_voltage( state[i].voltage ) ;
+                 state[i].consumed_mah = 0 ;
+                 break;
+
+            default:state[i].deRatedCapacityPercent = 100;
+
+        }
+    }
+}
+
+//HOODTECH MOD, losh 221215
+// calculates batt capacity based on current voltage. based on LiPo capacity tables.
+// Should only be used when not under load.
+uint8_t AP_BattMonitor::capacity_based_on_voltage( float meas_voltage )
+{
+    static uint8_t capacity[21] = {0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100} ; 
+    static float voltage[21] = {58.92,64.95,66.36,66.72,67.08,67.44,67.80,68.16,68.31,68.67,69.03,69.39,69.75,70.44,71.16,71.70,72.42,73.47,74.01,74.70,75.60} ; 
+    uint8_t ii ; 
+    
+
+    uint8_t temp_capacity; 
+
+    gcs().send_verbose_text(MAV_SEVERITY_INFO, "ArmVolt=%f", meas_voltage);
+    // find the values to use in the interpolation.
+    for ( ii = 0; ii < 21; ii++) {
+        if (meas_voltage<(voltage[ii]))
+        {
+            break;
+        }
+    }
+    
+    //based on the value found, interpolate the capacity.
+    if (ii==0){
+                gcs().send_text(MAV_SEVERITY_ALERT, "capac=0");
+
+        return 0; //if you are less than first value, youve got 0 capacity.
+    }
+    else if( ii<20 ){
+        temp_capacity = ((uint8_t)linear_interpolate( capacity[ii], capacity[ii+1],
+                                             meas_voltage, voltage[ii], voltage[ii+1]));
+        gcs().send_verbose_text(MAV_SEVERITY_ALERT, "capac=%d", temp_capacity);
+        return temp_capacity ; 
+    }
+    else {
+        return 100; // if you arent less than last value, you have full capacity.
+    }
+
+}
 
 namespace AP {
 

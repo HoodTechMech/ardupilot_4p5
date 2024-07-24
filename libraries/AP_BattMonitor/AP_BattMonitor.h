@@ -13,7 +13,7 @@
 
 // maximum number of battery monitors
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES
-#define AP_BATT_MONITOR_MAX_INSTANCES       9
+#define AP_BATT_MONITOR_MAX_INSTANCES       1
 #endif
 
 // first monitor is always the primary monitor
@@ -116,6 +116,7 @@ public:
         EFI                            = 27,
         AD7091R5                       = 28,
         Scripting                      = 29,
+        PiccoloCAN_BattMon             = 30,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -163,6 +164,7 @@ public:
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
         uint8_t     instance;                  // instance number of this backend
         Type        type;                      // allocated instance type
+        uint8_t     deRatedCapacityPercent;    // percentage of batt capacity left based on voltage at arming.
         const struct AP_Param::GroupInfo *var_info;
     };
 
@@ -279,6 +281,11 @@ public:
     bool reset_remaining_mask(uint16_t battery_mask, float percentage);
     bool reset_remaining(uint8_t instance, float percentage) { return reset_remaining_mask(1U<<instance, percentage);}
 
+    //HOODTECH MOD, losh 221215
+    // check current voltage and set derated capacity in percentage.
+    // Should only be used when not under load.
+    void set_derated_battery_capacity( void ) ; 
+
     // Returns mavlink charge state
     MAV_BATTERY_CHARGE_STATE get_mavlink_charge_state(const uint8_t instance) const;
 
@@ -312,6 +319,11 @@ private:
     /// returns the failsafe state of the battery
     Failsafe check_failsafe(const uint8_t instance);
     void check_failsafes(void); // checks all batteries failsafes
+
+    // HOODTECH MOD: losh 221215.
+    // calculates derated capacity based on current voltage. 
+    // Should only be used when not under load.
+    uint8_t capacity_based_on_voltage( float meas_voltage ) ; 
 
     battery_failsafe_handler_fn_t _battery_failsafe_handler_fn;
     const int8_t *_failsafe_priorities; // array of failsafe priorities, sorted highest to lowest priority, -1 indicates no more entries
