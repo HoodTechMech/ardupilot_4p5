@@ -1,4 +1,6 @@
 #include "Copter.h"
+#include <AP_GPS/AP_GPS.h> //HOODTECH MOD, -losh 220818, in support of GPSYAW checks.
+
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
@@ -33,6 +35,83 @@ void Copter::arm_motors_check()
         return;
     }
 
+    // get state of lock/unlock RC channel.
+    RC_Channel::AuxSwitchPos lockIn;
+    if (!rc().channel(8)->read_3pos_switch(lockIn))	{
+		lockIn = RC_Channel::AuxSwitchPos::MIDDLE; //MIDDLE says RC not connected.
+	}
+
+    // full right
+    if (!motors->armed() && (arm_switchPos==RC_Channel::AuxSwitchPos::LOW) && ch6KillArmStart==ARMING) { //ch6KillArmStart provides a debounce
+
+        // increase the arming counter to a maximum of 1 beyond the auto trim counter
+        if (arming_counter <= AUTO_TRIM_DELAY) {
+            arming_counter++;
+        }
+        if (g.force_lock_when_arm>0){
+            if (arming_counter>10) { //prevent arming if lock servo not commanded locked
+                SRV_Hood_HAL* release_servo_in_motors = new SRV_Hood_HAL( SRV_Hood_HAL::k_release ) ;
+                if(release_servo_in_motors!=nullptr){
+                    if(!release_servo_in_motors->get_servo_safe()){
+                        arming_counter = 0;
+                        gcs().send_text(MAV_SEVERITY_CRITICAL,"Pre-Arm: Release servo is OPEN");
+                    }
+                }
+                SRV_Hood_HAL* lock_servo_in_motors = new SRV_Hood_HAL( SRV_Hood_HAL::k_lock ) ;
+                if(lock_servo_in_motors!=nullptr){
+                    if(!lock_servo_in_motors->get_servo_safe()){
+                        arming_counter = 0;
+                        gcs().send_text(MAV_SEVERITY_CRITICAL,"Pre-Arm: Lock servo unlocked");
+                    }
+                }
+
+                if(lockIn==RC_Channel::AuxSwitchPos::HIGH){
+                    arming_counter=0;
+                    gcs().send_text(MAV_SEVERITY_CRITICAL,"Pre-Arm: Remote in Unlock State");
+                }
+            }
+        }
+
+        // arm the motors and configure for flight
+        if (arming_counter == ARM_DELAY && !motors->armed()) {
+            // reset arming counter if arming fail
+            if (!arming.arm(AP_Arming::Method::RUDDER)) {
+                arming_counter = 0;
+            }
+        }
+
+        // arm the motors and configure for flight
+        if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && flightmode->mode_number() == Mode::Number::STABILIZE) {
+            auto_trim_counter = 250;
+            // ensure auto-disarm doesn't trigger immediately
+            auto_disarm_begin = millis();
+        }
+
+    // full left and rudder disarming is enabled
+    } else if (motors->armed() && (arm_switchPos==RC_Channel::AuxSwitchPos::LOW) && ch6KillArmStart==KILLING) {
+        if (!flightmode->has_manual_throttle() && !ap.land_complete) {
+            arming_counter = 0;
+            return;
+        }
+
+        // increase the counter to a maximum of 1 beyond the disarm delay
+        if (arming_counter <= DISARM_DELAY) {
+            arming_counter++;
+        }
+
+        // disarm the motors
+        if (arming_counter == DISARM_DELAY && motors->armed()) {
+            arming.disarm(AP_Arming::Method::RUDDER);
+        }
+
+    // switch is not low so reset arming counter
+    } else {
+        arming_counter = 0;
+    }
+
+
+
+/*
     int16_t yaw_in = channel_yaw->get_control_in();
 
     // full right
@@ -81,6 +160,7 @@ void Copter::arm_motors_check()
     } else {
         arming_counter = 0;
     }
+    */
 }
 
 // auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds

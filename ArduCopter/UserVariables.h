@@ -3,8 +3,6 @@
 // example variables used in Wii camera testing - replace with your own
 // variables
 #ifdef USERHOOK_VARIABLES
-#include "SRV_Channel/SRV_Hood_HAL.h"
-
 
 enum mc40KillArmStart{
 NEUTRAL,

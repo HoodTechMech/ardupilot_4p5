@@ -191,6 +191,9 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
+
+        // 98: HOODTECH
+        k_param_force_lock_when_arm=98,
                 
         //
         // 100: Inertial Nav
@@ -465,6 +468,10 @@ public:
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
+
+    // Hoodtech
+    //
+    AP_Int8         force_lock_when_arm;
 
 #if MODE_THROW_ENABLED == ENABLED
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;

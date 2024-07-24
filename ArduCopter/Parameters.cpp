@@ -175,6 +175,14 @@ const AP_Param::Info Copter::var_info[] = {
 
 #endif
 
+    // @Param: LOCK_CHECK
+    // @DisplayName: Lock check for arming
+    // @Description: Allows enabling or disabling of pre-arming check for lock servo engagement
+    // @Values: 0:Disabled, 1:Enabled, 
+    // @Bitmask:
+    // @User: Standard
+    GSCALAR(force_lock_when_arm, "LOCK_CHECK", ARMING_CHECK_LOCK),    
+
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
     // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. See FS_OPTIONS param for additional actions, or for cases allowing Mission continuation, when GCS failsafe is enabled.
