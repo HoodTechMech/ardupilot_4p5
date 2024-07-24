@@ -395,6 +395,7 @@ private:
     // There are multiple states defined such as STABILIZE, ACRO,
     Mode *flightmode;
     Mode::Number prev_control_mode;
+    Mode::Number mode_candidate;
 
     RCMapper rcmap;
 
