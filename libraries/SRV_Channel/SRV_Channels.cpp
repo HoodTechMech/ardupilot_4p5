@@ -562,11 +562,15 @@ void SRV_Channels::push()
             }
 #if HAL_PICCOLO_CAN_ENABLE
             case AP_CAN::Protocol::PiccoloCAN: {
+                /*
+                Commenting this out so it can be moved.
+                this loop runs at 50hz, and thats way faster than we need right now. maybe if we switch to using CAN
+                for cmds, we will need it back here, but for now, I;ll move it to USER_SLOW_LOOP
                 AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
                 if (ap_pcan == nullptr) {
                     continue;
                 }
-                ap_pcan->update();
+                ap_pcan->update();*/
                 break;
             }
 #endif
