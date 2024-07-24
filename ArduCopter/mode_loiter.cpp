@@ -1,6 +1,7 @@
 #include "Copter.h"
 
 #if MODE_LOITER_ENABLED == ENABLED
+#define LOITER_WARNING_ALT 122.92
 
 /*
  * Init and run calls for loiter flight mode
@@ -86,6 +87,20 @@ void ModeLoiter::run()
     float target_roll, target_pitch;
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
+    static float prev_hagl = 0.0f; // static to use next iter to determine if copter went through LOITER_WARNING_ALT.
+    float hagl =0.0f; // height above ground level used for annuciating LOITER_WARNING_ALT warning.
+
+    // HOODTECH MOD: losh 221215.
+    // warning msg if user is above 400ft, and still in loiter that they might want to switch to AltHold
+    if(ahrs.get_hagl( hagl )){
+        // if current alt is greater than warning alt and previous alt was below it.
+        if((hagl>LOITER_WARNING_ALT) && (prev_hagl<LOITER_WARNING_ALT)) { 
+            //alert user to alt and remind to switch modes to althold.
+            gcs().send_text( MAV_SEVERITY_ALERT, "400ft, AltHold?") ;
+        }
+        // remember this altitude so we can use it next iter.
+        prev_hagl = hagl ; 
+    }
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
