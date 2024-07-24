@@ -998,7 +998,7 @@ private:
     void release_state_machine( void ) ;
     
     bool allow_release( void ) ;
-    //#TODO: uncomment this line.  bool update_servo_state( SRV_Hood_HAL* servo, eServo_state state ) ;    
+    bool update_servo_state( SRV_Hood_HAL* servo, eServo_state state ) ;    
 
 #if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME

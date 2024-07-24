@@ -334,6 +334,7 @@ public:
     // pwm value below which the option will be disabled:
     static const uint16_t AUX_PWM_TRIGGER_LOW = 1300;
 
+    bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
 protected:
 
     virtual void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
@@ -402,7 +403,6 @@ private:
     int16_t pwm_to_range() const;
     int16_t pwm_to_range_dz(uint16_t dead_zone) const;
 
-    bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
     bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
 
     // Structure used to detect and debounce switch changes
