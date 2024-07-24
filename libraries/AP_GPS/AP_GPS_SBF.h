@@ -98,7 +98,7 @@ private:
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
-   
+
     uint32_t crc_error_counter = 0;
     uint32_t RxState;
     uint32_t RxError;
@@ -113,6 +113,7 @@ private:
         ReceiverStatus = 4014,
         BaseVectorGeod = 4028,
         VelCovGeodetic = 5908,
+        AttEuler = 5938,
         AttEulerCov = 5939,
         AuxAntPositions = 5942,
     };
@@ -222,6 +223,24 @@ private:
         float Cov_VuDt;
     };
 
+    //HOODTECH MOD 221129 -losh
+    // adding new msg type: AttEuler which is the SBF msg that has heading from the dual antenna setup.
+    struct PACKED msg5938 // AttEuler
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t NrSV ; //avg # of satellites included in att calc
+        uint8_t Error ; //BitField with error info.
+        uint16_t Mode ; //attitude mode code
+        uint16_t Reserved ;
+        float Heading ;
+        float Pitch ;
+        float Roll ;
+        float PitchDot ;
+        float RollDot ;
+        float HeadingDot ;
+    };
+
     struct PACKED msg5939       // AttEulerCoV
     {
         uint32_t TOW;           // receiver time stamp, 0.001s
@@ -265,6 +284,7 @@ private:
         msg4014 msg4014u;
         msg4028 msg4028u;
         msg5908 msg5908u;
+        msg5938 msg5938u;
         msg5939 msg5939u;
         msg5942 msg5942u;
         uint8_t bytes[256];

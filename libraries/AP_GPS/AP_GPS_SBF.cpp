@@ -563,14 +563,46 @@ AP_GPS_SBF::process_message(void)
         }
         break;
     }
+    //HOODTECH MOD: 221129 -losh
+    // msg handling for AttEuler which has heading in it.
+    case AttEuler:
+    {
+        if(gps._use_GPSyaw==1){ //added this check 240125, -losh
+            const msg5938 &temp = sbf_msg.data.msg5938u;
+            check_new_itow(temp.TOW, sbf_msg.length);
+            if( BIT_IS_SET( !temp.Error, 0 ) && temp.Mode==2 ) { //check that error bit is not set and that sensor is in Mode=2: heading with aux antenna pos found with fixed ambiguities.
+                state.gps_yaw = wrap_360( temp.Heading );
+                state.have_gps_yaw = true;
+                // as of 221129, the only time we are listening to SBF is if we have gps_yaw configured.
+                state.gps_yaw_configured = true;
+            }
+            else {
+                //we purposely leave the state.gps_yaw the same, as a repeated gps_yaw is how I check that we have an issue
+                // with gps yaw.  at the time, I didnt notice have_gps_yaw boolean, which could also be checked to see if things are updating.
+                state.have_gps_yaw = false ;
+            }
+        } else {
+           state.have_gps_yaw = false ;
+           state.gps_yaw_accuracy = false;
+        }
+        break;
+    }
+    //HOODTECH MOD: 221130 -losh
+    // msg handling for AuxAntPositions which has puck dist in it.
     case AuxAntPositions:
     {
+        const msg5942 &temp = sbf_msg.data.msg5942u;
+        check_new_itow(temp.TOW, sbf_msg.length);
+        
+        if( BIT_IS_SET( !temp.ant1.Error, 0 ) ) { //check that error bit is not set.
+            state.relPosLength = norm( temp.ant1.DeltaEast, temp.ant1.DeltaNorth, temp.ant1.DeltaUp);
+        }
 #if GPS_MOVING_BASELINE
         if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
             // calculate yaw using reported antenna positions in earth-frame
             // note that this calculation does not correct for the vehicle's roll and pitch meaning it is inaccurate at very high lean angles
-            const msg5942 &temp = sbf_msg.data.msg5942u;
-            check_new_itow(temp.TOW, sbf_msg.length);
+            // const msg5942 &temp = sbf_msg.data.msg5942u;
+            // check_new_itow(temp.TOW, sbf_msg.length);
             if (temp.N > 0 && temp.ant1.Error == 0 && temp.ant1.AmbiguityType == 0) {
                 // valid RTK integer fix
                 const float rel_heading_deg = degrees(atan2f(temp.ant1.DeltaEast, temp.ant1.DeltaNorth));

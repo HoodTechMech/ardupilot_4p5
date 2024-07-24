@@ -356,13 +356,21 @@ void AP_GPS::init()
         }
     }
 
+    if(_use_GPSyaw){
     //prep the yaw history
-    for(uint8_t i=0; i<GPS_MAX_INSTANCES;i++){
-        yawhist[i].index=0;
-        for(uint8_t j=0; j<GPS_YAW_HISTORY_SIZE; j++){
-            yawhist[i].history[j]=0;
+        for(uint8_t i=0; i<GPS_MAX_INSTANCES;i++){
+            yawhist[i].index=0;
+            for(uint8_t j=0; j<GPS_YAW_HISTORY_SIZE; j++){
+                yawhist[i].history[j]=0;
+            }
+        } 
+    } else {
+        for(uint8_t i=0; i<GPS_MAX_INSTANCES;i++){
+            state[i].gps_yaw_configured = false;
+            state[i].have_gps_yaw = false;
         }
     }
+
 }
 
 void AP_GPS::convert_parameters()
