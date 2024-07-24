@@ -514,3 +514,44 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
 #endif
 }
 
+//HOODTECH MOD, -losh 220829
+// set_mode_follow - sets mode to follow mode if possible.  If not, set loiter, if not set althold
+void Copter::set_mode_follow(ModeReason reason)
+{
+    // attempt to switch to follow
+    if (!set_mode(Mode::Number::FOLLOW, reason)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Follow Unavail, Trying loiter");
+        set_mode_loiter(reason);
+    } else {
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
+}
+//HOODTECH MOD, -losh 220829
+// set loiter mode. if cannot, set althold
+void Copter::set_mode_loiter(ModeReason reason)
+{
+    //attemp to switch to loiter.
+    if (!set_mode(Mode::Number::LOITER, reason)){
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Loiter Unavail, Trying Althold");
+        set_mode_althold(reason);
+    }
+    else {
+        AP_Notify::events.failsafe_mode_change =1;
+    }
+}
+//HOODTECH MOD, -losh 220829
+// set althold mode if you can.  otherwise try stabilize.
+void Copter::set_mode_althold( ModeReason reason )
+{
+     //attemp to switch to loiter.
+    if (!set_mode(Mode::Number::ALT_HOLD, reason)){
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "AltHold Unavail, Trying Stabilize");
+        if( set_mode(Mode::Number::STABILIZE, reason)) {
+            AP_Notify::events.failsafe_mode_change =1;
+        }
+    }
+    else {
+        AP_Notify::events.failsafe_mode_change =1;
+    }
+}
+

@@ -797,6 +797,9 @@ private:
     bool should_disarm_on_failsafe();
     void do_failsafe_action(FailsafeAction action, ModeReason reason);
     void announce_failsafe(const char *type, const char *action_undertaken=nullptr);
+    void set_mode_follow( ModeReason reason) ;  //HOODTECH MOD, -losh 220829
+    void set_mode_loiter( ModeReason reason) ; //HOODTECH MOD, -losh 220829
+    void set_mode_althold( ModeReason reason) ; //HOODTECH MOD, -losh 220829
 
     // failsafe.cpp
     void failsafe_enable();
