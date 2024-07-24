@@ -790,8 +790,13 @@ void ModeGuided::velaccel_control_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        // do not spool down tradheli when on the ground with motor interlock enabled
-        make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
+        //set desired condition to current for moving base compatibility
+        const Vector2f& curr_pos_xy = inertial_nav.get_position_xy_cm();
+
+        // set target position and velocity to current position and velocity
+        pos_control->set_pos_target_xy_cm(curr_pos_xy.x, curr_pos_xy.y);
+        pos_control->set_vel_desired_xy_cms(inertial_nav.get_velocity_xy_cms());
+        if( !motors->armed()) { make_safe_ground_handling(); }
         return;
     }
 
