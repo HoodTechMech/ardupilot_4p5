@@ -223,6 +223,12 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+    //#TODO: uncomment friend classes after they are added.
+    // friend class HT_Recovery;   // HOODTECH MOD, losh, 231113 added so I can access control_mode to do diff heights based on HIGH/LOW mode request.
+    // friend class ModeAutoLaunch; //230410 HOODTECH losh
+    // friend class HT_Launch;
+    // friend class ModeAutoRecovery;
+    // friend class ModeHoodAuto;  //240112, HOOD, losh,    
 
     friend class _AutoTakeoff;
 
@@ -984,6 +990,16 @@ private:
     void userhook_auxSwitch2(const RC_Channel::AuxSwitchPos ch_flag);
     void userhook_auxSwitch3(const RC_Channel::AuxSwitchPos ch_flag);
 
+    // Hood specific funcs.
+    void arm_switch_state_machine( void ) ;
+    bool rc7_state_machine(void) ;
+
+    void lock_unlock_state_machine( void ) ;
+    void release_state_machine( void ) ;
+    
+    bool allow_release( void ) ;
+    //#TODO: uncomment this line.  bool update_servo_state( SRV_Hood_HAL* servo, eServo_state state ) ;    
+
 #if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME
     ModeAcro_Heli mode_acro;
@@ -1061,6 +1077,14 @@ private:
 #if MODE_TURTLE_ENABLED == ENABLED
     ModeTurtle mode_turtle;
 #endif
+//#TODO: uncomment the modes
+// #if MODE_AUTOLAUNCH_ENABLED == ENABLED
+//     ModeAutoLaunch mode_autoLaunch ;  //230410 HOODTECH -losh
+// #endif
+
+// #if MODE_RECOVERY_ENABLED == ENABLED
+//     ModeAutoRecovery mode_autoRecovery;
+// #endif
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
