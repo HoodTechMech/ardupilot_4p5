@@ -836,4 +836,43 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
     return true;
 }
 
+
+//HOODTECH MOD 221208, -losh
+// ability to cause the copter to auto-disarm if conditions are met.
+void AP_Arming_Copter::disarm_if_still_home(void)
+{
+    static uint32_t last_temp_warning_time_ms=0;
+    gcs().send_verbose_text(MAV_SEVERITY_INFO, "auto disarm attempt");
+    auto &ahrs = AP::ahrs();
+
+
+    // retrieve distance from home
+    Vector3f position ;
+    if(!ahrs.get_relative_position_NED_home( position )) return; // cant risk disarming with bad info.
+
+    if( _armed_with_checks && // wasnt force armed. if force armed, we shouldnt disarm.
+        ((millis() - copter.arm_time_ms) < AUTO_DISARM_TIME_LIMIT) && // its been less than 10s since arming
+        (position.z < AUTO_DISARM_ALT_LIMIT) && //alt is small.
+        copter.rc_throttle_control_in_filter.get()< AUTO_DISARM_THROTTLE_LIMIT && // throttle is low.
+        !AP_Notify::flags.flying && //the copter thinks we are not "flying"
+        copter.ap.land_complete ) //copter thinks we are on the ground.
+    {
+        //disarm the copter because an esc is unhealthy.
+        gcs().send_text( MAV_SEVERITY_EMERGENCY, "DISARM: ESC INHIBIT" ) ;
+        copter.arming.disarm(AP_Arming::Method::ESCSICK);
+    } else {
+        if(!_armed_with_checks) { gcs().send_verbose_text( MAV_SEVERITY_INFO, "force armed" ) ; }
+        if((millis() - copter.arm_time_ms) > AUTO_DISARM_TIME_LIMIT) { gcs().send_verbose_text( MAV_SEVERITY_INFO, "over time" ) ; }
+        if(position.z > AUTO_DISARM_ALT_LIMIT) { gcs().send_verbose_text( MAV_SEVERITY_INFO, "over alt" ) ; }
+        if(copter.rc_throttle_control_in_filter.get()> AUTO_DISARM_THROTTLE_LIMIT) { gcs().send_verbose_text( MAV_SEVERITY_INFO, "over thr" ) ; }
+        if(AP_Notify::flags.flying) { gcs().send_verbose_text( MAV_SEVERITY_INFO, "flying " ) ; }
+        if(!copter.ap.land_complete) { gcs().send_verbose_text( MAV_SEVERITY_INFO, "not landed" ) ; }
+        if((last_temp_warning_time_ms==0) || (millis()-last_temp_warning_time_ms)>5000){
+            gcs().send_text( MAV_SEVERITY_EMERGENCY, "ESC PROB: LAND NOW") ;
+            last_temp_warning_time_ms = millis();
+        }
+    }
+}
+
+
 #pragma GCC diagnostic pop

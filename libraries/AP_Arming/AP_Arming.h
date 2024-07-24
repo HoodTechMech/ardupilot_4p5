@@ -43,6 +43,7 @@ public:
         ARMING_CHECK_VISION      = (1U << 18),
         ARMING_CHECK_FFT         = (1U << 19),
         ARMING_CHECK_OSD         = (1U << 20),
+        ARMING_CHECK_FOLL        = (1U << 21),
     };
 
     enum class Method {
@@ -82,6 +83,9 @@ public:
         DEADRECKON_FAILSAFE = 33, // only disarm uses this...
         BLACKBOX = 34,
         DDS = 35,
+        ESCSICK = 36, // only disarm uses this...HOODTECH MOD, 221207, -losh added to keep track that we are disarming for ESC inhibited.
+        AUTOLAUNCH_TO_ERROR = 37, //only disarm uses this....HOODTECH MOD 230607, -losh, added to keep track that we are disarming for takeoff in Autolaunch failing because it accumulate to much desired pitch/roll
+        MAVLINK_ARMDISARM_MSG = 38,
         UNKNOWN = 100,
     };
 

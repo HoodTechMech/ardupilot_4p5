@@ -2006,6 +2006,8 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::PILOT_INPUT_FAILSAFE:
         case Method::DEADRECKON_FAILSAFE:
         case Method::BLACKBOX:
+        case Method::ESCSICK:
+        case Method::AUTOLAUNCH_TO_ERROR:
             // keep logging for longer if disarmed for a bad reason
             AP::logger().set_long_log_persist(true);
             return;
@@ -2026,6 +2028,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::TOYMODELANDFORCE:
         case Method::LANDING:
         case Method::DDS:
+        case Method::MAVLINK_ARMDISARM_MSG:
         case Method::UNKNOWN:
             AP::logger().set_long_log_persist(false);
             return;

@@ -1,6 +1,11 @@
 #pragma once
 
 #include <AP_Arming/AP_Arming.h>
+#include <AP_GPS/AP_GPS.h> //HOODTECH MOD, -losh 220818, in support of GPSYAW checks in pre-arm.
+#define AUTO_DISARM_TIME_LIMIT 10000 // in msec
+#define AUTO_DISARM_ALT_LIMIT 3 // altitude in meters. this should be smaller....but supposedly, the boat will heave +/-5m
+#define AUTO_DISARM_THROTTLE_LIMIT 1100 // in usec.
+
 
 class AP_Arming_Copter : public AP_Arming
 {
@@ -22,6 +27,10 @@ public:
 
     bool disarm(AP_Arming::Method method, bool do_disarm_checks=true) override;
     bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
+    
+    // HOODTECH MOD 221208, -losh
+    // disarm_if_still_home allows auto disarm by code if you have armed but havent moved yet. 
+    void disarm_if_still_home( void ) ;
 
 protected:
 
@@ -56,7 +65,10 @@ protected:
     // all data loaded
     bool terrain_database_required() const override;
 
+    bool gps_yaw_prearm_checks( bool display_failure);//HOODTECH MOD -losh 220826
+    bool follow_mode_prearm_checks( bool display_failure) ; //HOODTECH MOD -losh 220909
 private:
+    bool _armed_with_checks ; //HOODTECH MOD, 2212008 -losh, for remembering if this arming cycle was forced or not.
 
     // actually contains the pre-arm checks.  This is wrapped so that
     // we can store away success/failure of the checks.
