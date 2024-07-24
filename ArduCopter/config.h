@@ -229,13 +229,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throw - fly vehicle after throwing it in the air
 #ifndef MODE_THROW_ENABLED
-# define MODE_THROW_ENABLED ENABLED
+# define MODE_THROW_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // ZigZag - allow vehicle to fly in a zigzag manner with predefined point A B
 #ifndef MODE_ZIGZAG_ENABLED
-# define MODE_ZIGZAG_ENABLED ENABLED
+# define MODE_ZIGZAG_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -251,6 +251,22 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Recovery - auto hover and detect fixed wing arrival, descend to pole.
+#ifndef MODE_RECOVERY_ENABLED
+# define MODE_RECOVERY_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Recovery - auto hover and detect fixed wing arrival, descend to pole.
+#ifndef MODE_RECOVERY_ENABLED
+# define MODE_RECOVERY_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// AutoLaunch - fly copter in set path to launch a UAV from gripper.
+#ifndef MODE_AUTOLAUNCH_ENABLED
+# define MODE_AUTOLAUNCH_ENABLED ENABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Weathervane - allow vehicle to yaw into wind
@@ -317,7 +333,7 @@
 // Takeoff
 //
 #ifndef PILOT_TKOFF_ALT_DEFAULT
- # define PILOT_TKOFF_ALT_DEFAULT           0     // default final alt above home for pilot initiated takeoff
+ # define PILOT_TKOFF_ALT_DEFAULT           2     // default final alt above home for pilot initiated takeoff
 #endif
 
 
@@ -462,9 +478,6 @@
 #endif
 #ifndef DEFAULT_ANGLE_MAX
  # define DEFAULT_ANGLE_MAX         3000            // ANGLE_MAX parameters default value
-#endif
-#ifndef DEFAULT_DASH_ANGLE
- # define DEFAULT_DASH_ANGLE      1800
 #endif
 //////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
@@ -620,4 +633,16 @@
 
 #ifndef USER_PARAMS_ENABLED
   #define USER_PARAMS_ENABLED DISABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// HoodTech Items
+//
+
+#ifndef ARMING_CHECK_LOCK
+    #define ARMING_CHECK_LOCK        0x01
+#endif
+
+#ifndef DEFAULT_DASH_ANGLE
+    #define DEFAULT_DASH_ANGLE      1800        // default auto-dash angle is 17deg.
 #endif
