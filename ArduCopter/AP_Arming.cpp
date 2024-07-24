@@ -874,5 +874,28 @@ void AP_Arming_Copter::disarm_if_still_home(void)
     }
 }
 
+// HOODTECH MOD, -losh, 220818
+// Check GPS_YAW Sensor.
+bool AP_Arming_Copter::gps_yaw_prearm_checks( bool display_failure)
+{
+    //#TODO: this assumes you have the GPS unit with yaw as first gps.  this will have to be fixed eventually.
+    if(AP::gps().have_gps_yaw_configured(0)){ 
+        if( AP::gps().gps_is_GPSyaw_online()) {
+            if(!AP::gps().gps_yaw_healthy()) {
+                check_failed(display_failure, "GPS_YAW");
+                return false;
+            }
+            if( !AP::gps().gps_yaw_boom_check() )
+            {
+                check_failed(display_failure, "GPS Booms Deployed?");
+                return false ;
+            }
+        }
+        else {
+            check_failed(display_failure, "waiting for GPSyaw") ;
+        }
+    }
+    return true;
+}
 
 #pragma GCC diagnostic pop

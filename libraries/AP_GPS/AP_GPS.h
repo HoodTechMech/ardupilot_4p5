@@ -45,6 +45,10 @@
 #include "MovingBase.h"
 #endif // GPS_MOVING_BASELINE
 
+//HOODTECH MOD, losh 221117
+#define GPS_YAW_HISTORY_SIZE    10 // HOODTECH MOD, losh: at current rate of 200ms report period, this equates to 2sec worth of data. -losh, 221116
+#define MIN_BOOM_LENGTH_METERS  0.762 //meters, equivalent to ~30inches.
+
 class AP_GPS_Backend;
 class RTCM3_Parser;
 
@@ -241,6 +245,12 @@ public:
         float relPosD;                     ///< Reported Vertical distance in meters
         float accHeading;                  ///< Reported Heading Accuracy in degrees
         uint32_t relposheading_ts;        ///< True if new data has been received since last time it was false
+
+    };
+
+    struct GPS_Yaw_History {
+        uint8_t index;
+        uint16_t history[GPS_YAW_HISTORY_SIZE];
     };
 
     /// Startup initialisation.
@@ -396,6 +406,32 @@ public:
     bool gps_yaw_deg(float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const {
         return gps_yaw_deg(primary_instance, yaw_deg, accuracy_deg, time_ms);
     }
+
+
+    // HOODTECH MOD -losh
+    //gps yaw health (basically a check of whether or not the gps yaw has received some different values.)
+    bool gps_yaw_healthy( uint8_t instance ) const ; // HOODTECH MOD -losh, 220826.
+    //overload
+    bool gps_yaw_healthy() const {
+        return gps_yaw_healthy(primary_instance) ; 
+    }
+    // HOODTECH MOD -losh
+    //gps_is_GPSyaw_online - has the GPSyaw sensor reported in a nonZero value yet.
+    bool gps_is_GPSyaw_online( uint8_t instance ) const ; //HOODTECH MOD -losh, 221110.
+    //overload
+    bool gps_is_GPSyaw_online() const {
+        return gps_is_GPSyaw_online(primary_instance);
+    }
+    // HOODTECH MOD -losh
+    // gps_yaw_boom_check - is the GPS boom length sufficient
+    bool gps_yaw_boom_check( uint8_t instance) const ; 
+    //overload
+    bool gps_yaw_boom_check() const {
+        return gps_yaw_boom_check(primary_instance);
+    }
+    // HOODTECH MOD -losh
+    // gps periodic health check for in-flight checking.
+    void gps_yaw_periodic_check( void ) const ; // HOODTECH MOD -losh, 220830.
 
     // number of locked satellites
     uint8_t num_sats(uint8_t instance) const {
@@ -671,6 +707,7 @@ private:
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_RECEIVERS];
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
+    GPS_Yaw_History yawhist[GPS_MAX_RECEIVERS];
 
     /// primary GPS instance
     uint8_t primary_instance;
@@ -782,6 +819,9 @@ private:
 
     // helper function for mavlink gps yaw
     uint16_t gps_yaw_cdeg(uint8_t instance) const;
+
+    // update circ biffer w/latest gps yaw val. HOODTECH MOD, -losh
+    void update_gps_yaw_history(uint8_t instance);
 
     // Auto configure types
     enum GPS_AUTO_CONFIG {

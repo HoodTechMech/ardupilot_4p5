@@ -1988,6 +1988,120 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     return true;
 }
 
+
+// HOODTECH MOD: losh, 221117.
+/*
+return gpsYaw Boom health.
+*/
+bool AP_GPS::gps_yaw_boom_check( uint8_t instance) const
+{
+    if(!have_gps_yaw(instance)){
+        return false;
+    }
+
+    // boom length is considered "healthy" if larger than the min
+    return ( state[instance].relPosLength > MIN_BOOM_LENGTH_METERS );
+}
+
+//HOODTECH MOD: losh, 220826.
+/*
+return gps_yaw health based on there not being a bunch of repeated
+values from the last GPS_YAW_HISTORY_SIZE entries.
+*/
+bool AP_GPS::gps_yaw_healthy( uint8_t instance) const
+{
+	if (!have_gps_yaw(instance)) {
+        return false;
+    }
+                                                        
+    uint16_t firstyaw  = yawhist[instance].history[0];
+
+    for( uint8_t i=1; i<GPS_YAW_HISTORY_SIZE ; i++ ){
+        if( yawhist[instance].history[i] != firstyaw){
+            return true; //at least 2 diff values, declare gps healthy.
+        }
+    }
+
+    return false; // if all the same, return false. gps bad.
+}
+
+//HOODTECH MOD: losh, 220830.
+/*
+performs the periodic check on gps yaw health. and reports error if required.
+
+*/
+ void AP_GPS::gps_yaw_periodic_check( void ) const
+{
+    if( !gps_yaw_healthy(0) ){
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS_YAW Error" );
+    }
+}
+
+
+//HOODTECH MOD: losh, 221102.
+/*
+Checks to see if GPSyaw sensor was not reporting, but is now. 
+Returns true once the sensor has come online.
+As of 221111, this is used by EKF3 to check if GPSyaw is online
+and as of 221111, we only use EKF3 for GPSyaw scenarios. but that may change.
+*/
+bool AP_GPS::gps_is_GPSyaw_online( uint8_t instance ) const
+{
+    static bool _GPSyaw_online = false;
+    static uint32_t _gps_ontime = AP_HAL::millis();
+    // 221111 note to self:
+    // Prolly should add a check that allows this function to return true if you are using a compass with EKF3?
+
+    // to prevent funny business during flight, if gpsyaw was online before, its online now.
+    if (_GPSyaw_online) {
+        return true ; 
+    }
+
+    // to determine that GPSyaw is online, Im looking to see that its history is all non-zero.
+    uint8_t Nzeros = 0 ;
+    for( uint8_t i=0; i<GPS_YAW_HISTORY_SIZE ; i++ ){
+        if( yawhist[instance].history[i] == 0){
+            Nzeros++;
+        }
+    }
+    // if there are no zero's in the history, check if healthy
+    if (Nzeros==0){ 
+        if( gps_yaw_healthy(instance)) { //if healthy (meaning there are at least two diff values). should I check more: maybe they are unique?
+            // remember for all time that the yaw sensor is online. no funny business while you are flying.
+            _GPSyaw_online = true ; 
+
+            // alert the world to your sucess.
+            gcs().send_text(MAV_SEVERITY_INFO, "GPSyaw now online [%2.1fsec].", ((float) (AP_HAL::millis()-_gps_ontime)/1000) ) ; 
+
+            // return true: gpsYaw is online.
+            return true;
+        }
+    }
+    
+    // if you got here, return false cause GPSyaw isnt online yet.
+    return false;
+}
+
+//HOODTECH MOD: losh, 220826.
+/*
+updates the circluar buffer of gps yaw historic values.
+
+*/
+void AP_GPS::update_gps_yaw_history(uint8_t instance)
+{
+    if( state[instance].have_gps_yaw){  //if this instance has gps yaw available.
+        // record the current value of gps yaw in the yaw history.
+         yawhist[instance].history[yawhist[instance].index] = (uint16_t) 100*state[instance].gps_yaw ; 
+        
+		//update index in circular buffer.
+		yawhist[instance].index++ ; 
+        if( yawhist[instance].index >= GPS_YAW_HISTORY_SIZE){
+             yawhist[instance].index=0;
+        }
+     }
+	else return;
+}
+
 /*
  * Old parameter metadata.  Until we have versioned parameters, keeping
  * old parameters around for a while can help with an adjustment
