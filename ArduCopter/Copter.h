@@ -230,6 +230,10 @@ public:
 
     Copter(void);
 
+    uint32_t get_arm_time() { return arm_time_ms ; } ;
+    // uint8_t get_mode() const override { return (uint8_t)control_mode; }
+    uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); }
+
 private:
 
     // key aircraft parameters passed to multiple libraries
@@ -879,7 +883,7 @@ private:
     ModeReason _last_reason;
     // called when an attempt to change into a mode is unsuccessful:
     void mode_change_failed(const Mode *mode, const char *reason);
-    uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); }
+    // uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); } -HOODTECH made this public.
     bool current_mode_requires_mission() const override;
     void update_flight_mode();
     void notify_flight_mode();

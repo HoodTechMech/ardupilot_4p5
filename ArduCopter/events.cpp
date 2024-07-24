@@ -474,7 +474,13 @@ bool Copter::should_disarm_on_failsafe() {
 
 
 void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
-
+    //HOODTECH MOD, -losh, 220829: if follow mode is enabled, and failsafing is on, switch to follow mode instead of RTL.
+    // #TODO: this just chekcs mode5, should be if any mode is configured says maritime mode.
+    // #TODO: or should there just be a maritime param...?
+    if( g2.follow.enabled() && (action!=FailsafeAction::NONE) && ( g.flight_mode5.get() == (signed char) Mode::Number::FOLLOW )){
+        set_mode_follow( reason ) ;
+        return ;
+    }
     // Execute the specified desired_action
     switch (action) {
         case FailsafeAction::NONE:
