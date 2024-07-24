@@ -274,6 +274,14 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_SUBGROUPINFO(params[1], "2_", 33, AP_GPS, AP_GPS::Params),
 #endif
 
+    // @Param: _USE_GPSYAW
+    // @DisplayName: USE GPS YAW
+    // @Description: TDetermines if this GPS unit should listen to any incoming yaw information.
+    // @Increment: 1
+    // @Values: 0:No, 1:Yes
+    // @User: Advanced
+    AP_GROUPINFO("_USE_GPSYAW", 34, AP_GPS, _use_GPSyaw, 1),
+
     AP_GROUPEND
 };
 
