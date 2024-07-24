@@ -355,6 +355,14 @@ void AP_GPS::init()
             rate_ms.set(GPS_MAX_RATE_MS);
         }
     }
+
+    //prep the yaw history
+    for(uint8_t i=0; i<GPS_MAX_INSTANCES;i++){
+        yawhist[i].index=0;
+        for(uint8_t j=0; j<GPS_YAW_HISTORY_SIZE; j++){
+            yawhist[i].history[j]=0;
+        }
+    }
 }
 
 void AP_GPS::convert_parameters()
