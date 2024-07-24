@@ -44,6 +44,8 @@
 #define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 #define AC_ATTITUDE_CONTROL_THR_G_BOOST_THRESH          1.0f  // default angle-p/pd throttle boost threshold
 
+#define AC_ATTITUDE_CONTROL_YAW_DECAY_GAIN              0.01f    //default yaw decay gain for weathervaning
+
 class AC_AttitudeControl {
 public:
     AC_AttitudeControl( AP_AHRS_View &ahrs,
@@ -171,6 +173,9 @@ public:
     // If reset_rate is false rates are not reset to allow the rate controllers to run
     void reset_yaw_target_and_rate(bool reset_rate = true);
 
+    // Decay yaw target to vehicle heading, allows slow reset of vehicle heading to where it naturally wants to be
+    void decay_yaw_target_to_current_heading() ;
+    
     // handle reset of attitude from EKF since the last iteration
     void inertial_frame_reset();
 
@@ -478,6 +483,9 @@ protected:
 
     // rate controller input smoothing time constant
     AP_Float            _input_tc;
+
+    // Yaw heading decay gain, used to allow desired heading to decay to achieved heading to allow weathervaning behavior.
+    AP_Float            _p_yaw_decay;
 
     // Intersampling period in seconds
     float               _dt;

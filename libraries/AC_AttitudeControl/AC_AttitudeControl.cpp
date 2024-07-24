@@ -150,6 +150,16 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("INPUT_TC", 20, AC_AttitudeControl, _input_tc, AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT),
 
+    // @Param: YAW_DECAY
+    // @DisplayName: Yaw target decay gain
+    // @Description: Yaw target decay gain. Higher numbers cause looser yaw response, lower number causes copter to fight for yaw position longer
+    // @Units: 
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @Values: 0.5:Very Soft, 0.2:Soft, 0.15:Medium, 0.1:Crisp, 0.01:Default, 0.05:Very Crisp
+    // @User: Standard
+    AP_GROUPINFO("YAW_DECAY", 21, AC_AttitudeControl, _p_yaw_decay, AC_ATTITUDE_CONTROL_YAW_DECAY_GAIN),
+
     AP_GROUPEND
 };
 
@@ -754,6 +764,9 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Record error to handle EKF resets
     _attitude_ang_error = attitude_body.inverse() * _attitude_target;
+
+    //set yaw to current to allow for weathervaning.
+    decay_yaw_target_to_current_heading();
 }
 
 // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
@@ -963,6 +976,15 @@ void AC_AttitudeControl::reset_yaw_target_and_rate(bool reset_rate)
     }
 }
 
+void AC_AttitudeControl::decay_yaw_target_to_current_heading()
+{
+        // move attitude target to current heading
+    float yaw_shift = _p_yaw_decay*(_ahrs.yaw - _euler_angle_target.z);
+    Quaternion _attitude_target_update;
+    _attitude_target_update.from_axis_angle(Vector3f{0.0f, 0.0f, yaw_shift});
+    _attitude_target = _attitude_target_update * _attitude_target;
+
+}
 // Shifts the target attitude to maintain the current error in the event of an EKF reset
 void AC_AttitudeControl::inertial_frame_reset()
 {
@@ -1136,7 +1158,7 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
     } ps[] = {
         { "ANG_PIT", get_angle_pitch_p() },
         { "ANG_RLL", get_angle_roll_p() },
-        { "ANG_YAW", get_angle_yaw_p() }
+        //{ "ANG_YAW", get_angle_yaw_p() } //caleb did this in old code...I dont know why. -losh, 240724
     };
     for (uint8_t i=0; i<ARRAY_SIZE(ps); i++) {
         // all AC_P's must have a positive P value:
