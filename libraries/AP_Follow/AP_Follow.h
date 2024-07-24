@@ -77,6 +77,10 @@ public:
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
+    // HOODTECH MOD 230703 -losh
+    // get horizontal (2d) target to distance in NED frame
+    bool get_horz_target_dist_ned( Vector2f &dist_ne) ;
+
     // get target sysid
     uint8_t get_target_sysid() const { return _sysid.get(); }
 
@@ -96,6 +100,27 @@ public:
     // parse mavlink messages which may hold target's position, velocity and attitude
     void handle_msg(const mavlink_message_t &msg);
 
+    // Hood specific fns.
+    //
+
+    //update pilot offsets_XY. Should be called at loop rate by mode_follow, accumulates offset, offset = offset+new_input
+    void update_pilot_nudge_xy(Vector3f &velocity_NED, float dt);
+      //update pilot offsets_Z. Should be called at loop rate by mode_follow, accumulates offset, offset = offset+new_input
+    void update_pilot_nudge_z(Vector3f &velocity_NED, float dt);
+    //zero just the z-portion of the pilot offsets.
+    void zero_pilot_Z_offset();
+
+    // calc nudge to stay where you currently are.
+    bool calc_pilot_nudge_based_on_current_location( void ) ;
+
+    // HOODTECH MOD: -losh 220907, retrieve accumuilated pilot nudges.
+    Vector3f get_pilot_offset_nudges( void );
+
+    // checks the distance from target and sets the use return alt local variable.
+    bool set_use_return_alt(void);
+
+    void zero_pilot_offsets();
+
     //
     // GCS reporting functions
     //
@@ -112,6 +137,21 @@ public:
     // returns true if a follow option enabled
     bool option_is_enabled(Option option) const { return (_options.get() & (uint16_t)option) != 0; }
 
+    //publish pilot nudge parameters
+    float pilot_max_xy() const {return _pilot_xy_vel_max;}
+
+    float max_arming_vel_mismatch() const {return _arming_vel_mismatch;}
+    float max_arming_vel() const {return _arming_max_velocity;}
+
+    // these moved from private to public so I can access it from various modes.
+    // get offsets in meters in NED frame
+    bool get_offsets_ned(Vector3f &offsets) const;
+    // get velocity estimate in m/s in NED frame using dt since last update
+    bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
+
+
+    bool follow_prearm_check(Vector3f &offsets) ;
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -121,14 +161,8 @@ private:
     // returns true if we should extract information from msg
     bool should_handle_message(const mavlink_message_t &msg) const;
 
-    // get velocity estimate in m/s in NED frame using dt since last update
-    bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
-
     // initialise offsets to provided distance vector to other vehicle (in meters in NED frame) if required
     void init_offsets_if_required(const Vector3f &dist_vec_ned);
-
-    // get offsets in meters in NED frame
-    bool get_offsets_ned(Vector3f &offsets) const;
 
     // rotate 3D vector clockwise by specified angle (in degrees)
     Vector3f rotate_vector(const Vector3f &vec, float angle_deg) const;
@@ -153,6 +187,12 @@ private:
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
     AP_Int16    _options;           // options for mount behaviour follow mode
+    //Hood added params
+    AP_Float    _pilot_xy_vel_max;  // maximum pilot xy nudge velocity
+    AP_Float    _arming_vel_mismatch; //max allowed mismatch between vehicle and follow messages for arming
+    AP_Float    _arming_max_velocity; //max allowed velocity for arming in follow mode
+    AP_Int16    _ret_alt_rad;       // radius outside of which the copter will go to the return altitude instead of follow offZ
+    AP_Int16    _return_alt;        // altitude to use as offsetZ for entering following from far away (as defined by _ret_alt_rad)
 
     // local variables
     uint32_t _last_location_update_ms;  // system time of last position update
@@ -165,6 +205,10 @@ private:
     float _dist_to_target;          // latest distance to target in meters (for reporting purposes)
     float _bearing_to_target;       // latest bearing to target in degrees (for reporting purposes)
     bool _offsets_were_zero;        // true if offsets were originally zero and then initialised to the offset from lead vehicle
+
+    // Hood added local variables
+    Vector3f    _pilot_offset_NED;  // stores the pilot offset, allows nudging
+    bool        _use_return_alt;    // true if overriding follow mode offsetZ with param _RET_ALT
 
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};

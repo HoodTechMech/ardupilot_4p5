@@ -39,6 +39,15 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
+//Hood Defns
+#define AP_FOLLOW_ARM_VEL_MISMATCH 1.0f //default allowed velocity mismatch for arming
+#define AP_FOLLOW_ARM_MAX_VELOCITY 10.0f //max vehicle 3D velocity to allow arming
+#define AP_FOLLOW_DEF_ALG_TYPE      0
+#define AP_FOLLOW_RET_ALT           40
+#define AP_FOLLOW_RET_ALT_RAD       100
+#define AP_FOLLOW_DIST_MAX          2000
+
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_FOLLOW_ALT_TYPE_DEFAULT 0
 #else
@@ -74,7 +83,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Units: m
     // @Range: 1 1000
     // @User: Standard
-    AP_GROUPINFO("_DIST_MAX", 5, AP_Follow, _dist_max, 100),
+    AP_GROUPINFO("_DIST_MAX", 5, AP_Follow, _dist_max, AP_FOLLOW_DIST_MAX),
 
     // @Param: _OFS_TYPE
     // @DisplayName: Follow offset type
@@ -114,7 +123,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Description: Follow yaw behaviour
     // @Values: 0:None,1:Face Lead Vehicle,2:Same as Lead vehicle,3:Direction of Flight
     // @User: Standard
-    AP_GROUPINFO("_YAW_BEHAVE", 8, AP_Follow, _yaw_behave, 1),
+    AP_GROUPINFO("_YAW_BEHAVE", 8, AP_Follow, _yaw_behave, 0),
 #endif
 
     // @Param: _POS_P
@@ -141,6 +150,51 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
 
+    // @Param: _VEL_XY
+    // @DisplayName: Pilot XY nudge velocity
+    // @Description: Maximum velocity pilot can command nudges in XY
+    // @Range: 0 10
+    // @Units: m/s
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("_NDG_XY", 12, AP_Follow, _pilot_xy_vel_max, 2.0f),
+
+    // @Param: _VEL_MISMAT
+    // @DisplayName: Maximum velocity mismatch
+    // @Description: Allowed velocity mismatch before vehicle refuses to arm in follow mode.
+    // @Range: 0 10
+    // @Units: m/s
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("_ARM_VMISMAT", 13, AP_Follow, _arming_vel_mismatch, AP_FOLLOW_ARM_VEL_MISMATCH),
+
+    // @Param: _ARM_VEL_MAX
+    // @DisplayName: Max allowed arming velocity
+    // @Description: Maximum vehicle velocity allowed before Follow mode will refuse to arm
+    // @Range: 0 15
+    // @Units: m/s
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("_ARM_VEL_MAX", 14, AP_Follow, _arming_max_velocity, AP_FOLLOW_ARM_MAX_VELOCITY),
+
+    // @Param: _RET_ALT_RAD
+    // @DisplayName: Follow mode stick
+    // @Description: Follow mode algorithm type
+    // @Range: 0 15
+    // @Units: N/A
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_RET_ALT_R", 15, AP_Follow, _ret_alt_rad, AP_FOLLOW_RET_ALT_RAD),
+
+    // @Param: _RET_ALT
+    // @DisplayName: Follow mode stick
+    // @Description: Follow mode algorithm type
+    // @Range: 0 15
+    // @Units: N/A
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_RET_ALT", 16, AP_Follow, _return_alt, AP_FOLLOW_RET_ALT),
+
     AP_GROUPEND
 };
 
@@ -165,6 +219,121 @@ void AP_Follow::clear_offsets_if_required()
     _offsets_were_zero = false;
 }
 
+void AP_Follow::zero_pilot_offsets()
+{
+    _pilot_offset_NED = Vector3f();
+}
+
+void AP_Follow::zero_pilot_Z_offset()
+{
+    _pilot_offset_NED.z = 0;
+}
+
+// retrieve the accumulated pilot nudge.
+Vector3f AP_Follow::get_pilot_offset_nudges(void)
+{
+   // pilot_offset_nudges =  _pilot_offset_NED ;
+    return _pilot_offset_NED;
+}
+
+void AP_Follow::update_pilot_nudge_xy( Vector3f &pilot_vel, float dt)
+{
+    if (!pilot_vel.is_zero()){
+        //accumulate nudge based on requested pilot velocity and time duration of request.
+        _pilot_offset_NED.x += pilot_vel.x*dt;
+        _pilot_offset_NED.y += pilot_vel.y*dt;
+    }
+}
+
+void AP_Follow::update_pilot_nudge_z( Vector3f &pilot_vel, float dt)
+{
+    if (!pilot_vel.is_zero()){
+    //accumulate nudge based on requested pilot velocity and time duration of request.
+    _pilot_offset_NED.z += pilot_vel.z*dt;
+    }
+}
+
+// HOODTECH MOD: -losh 220831
+/*
+calculates what the pilot nudge should be in order to stay
+at current location.  Used to zero out pilot input if the pilot
+lets go of the stick.
+*/
+bool AP_Follow:: calc_pilot_nudge_based_on_current_location( void )
+{
+    // get our location
+    Location current_loc;
+    if (!AP::ahrs().get_location(current_loc)) {
+        clear_dist_and_bearing_to_target();
+         return false;
+    }
+
+    // get target location and velocity
+    Location target_loc;
+    Vector3f veh_vel;
+    if (!get_target_location_and_velocity(target_loc, veh_vel)) {
+        clear_dist_and_bearing_to_target();
+        return false;
+    }
+
+    // change to altitude above home if relative altitude is being used
+    if (target_loc.relative_alt == 1) {
+        current_loc.alt -= AP::ahrs().get_home().alt;
+    }
+
+    // calculate difference
+    const Vector3f dist_vec = current_loc.get_distance_NED(target_loc);
+
+    // fail if too far
+    if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
+        clear_dist_and_bearing_to_target();
+        return false;
+    }
+
+    // initialise offsets from distance vector if required
+    init_offsets_if_required(dist_vec);
+
+    // get offsets
+    Vector3f offsets;
+    if (!get_offsets_ned(offsets)) {
+        clear_dist_and_bearing_to_target();
+        return false;
+    }
+
+    //this is ok for upnudge, but on down nudge, maybe need a projection?
+    // calculate the Z-nudge to stay in current Z location.
+      _pilot_offset_NED.z = -dist_vec.z - offsets.z ;
+
+    gcs().send_verbose_text(MAV_SEVERITY_ALERT,"Dg:%2.0f, O:%2.0f, N:%2.0f, Do:%2.0f",
+    dist_vec.z,
+     offsets.z,
+      _pilot_offset_NED.z,
+       dist_vec.z + offsets.z + _pilot_offset_NED.z);
+    return true;
+}
+
+
+// Prearm checks for when follow mode is enabled.
+bool AP_Follow::follow_prearm_check(Vector3f &offsets)
+{
+        //if follow mode isnt enabled, then dont perform follow checks.
+    if (!AP_Follow::enabled()) return true;
+
+    if (!AP_Follow::get_offsets_ned( offsets )) { return false;  }
+
+    if( offsets.z>=0){ return false; }
+
+    // get target location and velocity
+    Location target_loc;
+    Vector3f veh_vel;
+    if (!get_target_location_and_velocity(target_loc, veh_vel)) {
+        gcs().send_verbose_text(MAV_SEVERITY_WARNING,"no targ loc/vel");
+        offsets.x=-1;
+        return false;
+    }
+    return true;
+}
+
 // get target's estimated location
 bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
 {
@@ -175,6 +344,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // check for timeout
     if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+        gcs().send_verbose_text(MAV_SEVERITY_DEBUG,"gps timeout, simspd2x?");
         return false;
     }
 
@@ -211,6 +381,9 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     Vector3f veh_vel;
     if (!get_target_location_and_velocity(target_loc, veh_vel)) {
         clear_dist_and_bearing_to_target();
+        dist_ned.x=-1; // for reporting during arming.
+        dist_ned.z=-1; // for reporting during arming.
+        gcs().send_verbose_text(MAV_SEVERITY_WARNING,"no targ loc/vel");
         return false;
     }
 
@@ -224,6 +397,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
 
     // fail if too far
     if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "too far" );
         clear_dist_and_bearing_to_target();
         return false;
     }
@@ -234,6 +408,8 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     // get offsets
     Vector3f offsets;
     if (!get_offsets_ned(offsets)) {
+        gcs().send_verbose_text(MAV_SEVERITY_WARNING,"no offsets");
+        dist_ned = offsets; //for reporting.
         clear_dist_and_bearing_to_target();
         return false;
     }
@@ -252,6 +428,34 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     }
 
     return true;
+}
+
+bool AP_Follow::get_horz_target_dist_ned( Vector2f &dist_ne)
+{
+     // get our location
+    Location current_loc;
+    if (!AP::ahrs().get_location(current_loc)) {
+        clear_dist_and_bearing_to_target();
+        return false;
+    }
+
+    // get target location and velocity
+    Location target_loc;
+    Vector3f veh_vel;
+    if (!get_target_location_and_velocity(target_loc, veh_vel)) {
+        clear_dist_and_bearing_to_target();
+        return false;
+    }
+
+    // calculate difference
+     Vector3f dist_NED = current_loc.get_distance_NED(target_loc);
+
+    // make the 2d vector.
+    dist_ne.x = dist_NED.x;
+    dist_ne.y = dist_NED.y;
+
+     return true;
+
 }
 
 // get target's heading in degrees (0 = north, 90 = east)
@@ -348,6 +552,10 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // above home alt
             _target_location.set_alt_cm(packet.relative_alt / 10, Location::AltFrame::ABOVE_HOME);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            _target_location.alt = 0;
+            // ----------------------------------------
+#endif
         } else {
             // absolute altitude
             _target_location.set_alt_cm(packet.alt / 10, Location::AltFrame::ABSOLUTE);
@@ -503,9 +711,17 @@ bool AP_Follow::get_offsets_ned(Vector3f &offset) const
 {
     const Vector3f &off = _offset.get();
 
+    // HOODTECH MOD, 240130, -losh
+    // dont allow offsets that are >=0
+    if(off.z>=0) { return false; }
+
     // if offsets are zero or type is NED, simply return offset vector
-    if (off.is_zero() || (_offset_type == AP_FOLLOW_OFFSET_TYPE_NED)) {
+    if(_offset_type == AP_FOLLOW_OFFSET_TYPE_NED) {
         offset = off;
+        if(_use_return_alt){
+            //insure offsetZ is neg.
+            offset.z = (-1)*fabsf((float)_return_alt.get());
+        }
         return true;
     }
 
@@ -562,6 +778,27 @@ bool AP_Follow::have_target(void) const
     if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
         return false;
     }
+    return true;
+}
+
+bool AP_Follow::set_use_return_alt(void)
+{
+    Vector3f dist_vec;  // vector to lead vehicle
+    Vector3f dist_vec_offs;  // vector to lead vehicle + offset
+    Vector3f vel_of_target;  // velocity of lead vehicle
+    if (!get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
+        //follow link is not set up yet
+        return false;
+    }
+
+    //create 2-D vector to use to calc horiz distance.
+    Vector2f dist_vec_2d( dist_vec.x, dist_vec.z) ;
+    if((_ret_alt_rad.get()>0) & (dist_vec_2d.length() > _ret_alt_rad.get())){
+        _use_return_alt = true ;
+    } else {
+        _use_return_alt = false ;
+    }
+
     return true;
 }
 
