@@ -226,7 +226,7 @@ public:
     friend class ModeHoodAuto;  //240112, HOOD, losh,    
     //#TODO: uncomment friend classes after they are added.
     // friend class HT_Recovery;   // HOODTECH MOD, losh, 231113 added so I can access control_mode to do diff heights based on HIGH/LOW mode request.
-    // friend class ModeAutoLaunch; //230410 HOODTECH losh
+    friend class ModeLaunch; //230410 HOODTECH losh
     // friend class HT_Launch;
     // friend class ModeAutoRecovery;
 
@@ -1078,8 +1078,8 @@ private:
     ModeTurtle mode_turtle;
 #endif
 //#TODO: uncomment the modes
-// #if MODE_AUTOLAUNCH_ENABLED == ENABLED
-//     ModeAutoLaunch mode_autoLaunch ;  //230410 HOODTECH -losh
+// #if MODE_LAUNCH_ENABLED == ENABLED
+//     ModeLaunch mode_autoLaunch ;  //230410 HOODTECH -losh
 // #endif
 
 // #if MODE_RECOVERY_ENABLED == ENABLED

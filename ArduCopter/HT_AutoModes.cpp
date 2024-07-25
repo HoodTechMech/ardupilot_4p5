@@ -7,7 +7,7 @@ Hood Technology Jan 2024
 */
 #include "Copter.h"
 
-#if(( MODE_AUTOLAUNCH_ENABLED==ENABLED)||(MODE_RECOVERY_ENABLED==ENABLED))
+#if(( MODE_LAUNCH_ENABLED==ENABLED)||(MODE_RECOVERY_ENABLED==ENABLED))
 #include <AP_GPS/AP_GPS.h>
 #include "HT_AutoModes.h"
 

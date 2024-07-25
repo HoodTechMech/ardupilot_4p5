@@ -12,7 +12,12 @@
 #if WEATHERVANE_ENABLED == ENABLED
  #include <AC_AttitudeControl/AC_WeatherVane.h>
 #endif
-
+#if MODE_LAUNCH_ENABLED == ENABLED
+ #include "HT_Launch.h"
+#endif
+#if MODE_RECOVERY_ENABLED == ENABLED
+ # include "HT_Recovery.h"
+#endif
 // Global parameter class.
 //
 class Parameters {
@@ -594,6 +599,11 @@ public:
 #if MODE_FOLLOW_ENABLED == ENABLED
     // follow
     AP_Follow follow;
+#endif
+
+#if MODE_LAUNCH_ENABLED == ENABLED
+    // hood launch mode.
+    HT_Launch ht_launch;
 #endif
 
 #if USER_PARAMS_ENABLED == ENABLED

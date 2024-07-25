@@ -253,19 +253,14 @@
 //////////////////////////////////////////////////////////////////////////////
 // Recovery - auto hover and detect fixed wing arrival, descend to pole.
 #ifndef MODE_RECOVERY_ENABLED
-# define MODE_RECOVERY_ENABLED ENABLED
+# define MODE_RECOVERY_ENABLED DISABLED
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Recovery - auto hover and detect fixed wing arrival, descend to pole.
-#ifndef MODE_RECOVERY_ENABLED
-# define MODE_RECOVERY_ENABLED ENABLED
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // AutoLaunch - fly copter in set path to launch a UAV from gripper.
-#ifndef MODE_AUTOLAUNCH_ENABLED
-# define MODE_AUTOLAUNCH_ENABLED ENABLED
+#ifndef MODE_LAUNCH_ENABLED
+# define MODE_LAUNCH_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

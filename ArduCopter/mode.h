@@ -1860,6 +1860,7 @@ protected:
 };
 #endif
 
+#if MODE_LAUNCH_ENABLED==ENABLED || MODE_RECOVERY_ENABLED==ENABLED
 // This is just the common methods of hood auto modes.  It never gets instaniated
 // by itself.
 class ModeHoodAuto : public ModeGuided
@@ -1910,6 +1911,133 @@ class ModeHoodAuto : public ModeGuided
     //void        low_pass_ahrs(float old_fact, float new_fact) { low_pass_ahrs(old_fact, new_fact, false) ; } ;
 
 };
+#endif
+
+#if MODE_LAUNCH_ENABLED == ENABLED
+class ModeLaunch : public ModeHoodAuto {
+
+public:
+
+    // inherit constructor
+    using ModeHoodAuto::Mode;
+
+    // public methods.
+    bool init(bool ignore_checks) override;
+    void run() override;
+    bool ready_to_arm() ;
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool in_guided_mode() const override {return false;}
+    bool allow_release() ; 
+
+    protected:
+
+        const char *name() const override { return "AULA"; }
+        const char *name4() const override { return "AULA"; }
+
+	    // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
+        enum class AutoLaunchState {
+            aLaunch_OnTheGround,        //0
+            aLaunch_Takeoff,            //1
+            aLaunch_InitAsc,            //2
+            aLaunch_SlowToDashAlt,      //3
+            aLaunch_PreDash,            //4
+            aLaunch_Dashing,            //5
+            aLaunch_Release,            //6
+            aLaunch_PostDash,           //7
+         };
+
+         enum eReleaseReason {
+            ReleaseAllowed,
+            YawRateLP_Limited,
+            LeanLP_Limited,
+            LockServoLocked,
+            SafetyFence,
+            ReleaseDir,
+         } ;
+
+         enum MaritimeDashDir {
+            NotAssigned,
+            CopterLeft,
+            CopterFwd,
+            CopterRight
+         } ;
+
+         enum ControllerType {
+            AttitudeController,
+            GuidedVelController,
+            PreDashController
+        } ;
+
+        bool check_parameters(void) override ;
+
+    private:
+        // private methods.
+        AutoLaunchState get_aLaunch_state( float target_climb_rate,ModeLaunch::AutoLaunchState prevstate );
+        eReleaseReason  check_release_conditions(void) ;
+        AltHoldModeState    _logging_althold_st ;     //DEBUG
+
+        bool        init_servos( void ) ;
+        bool        attempt_to_release( void ) ; //attempt to set servos for release.
+        void        init_dash_direction( int16_t angle_offset_deg ) ;
+        bool        send_copter_home(void) ;    // sets copter in correct mode to go home: either RTL or follow.
+        void        calc_angles_for_dash(float dash_factor, float ascent_rate, float &target_roll, float &target_pitch ) ;
+        void        update_remain_release_window( uint32_t time ) ;
+        bool        set_autolaunch_NED_offsets( void );
+        void        read_dash_direction_from_remote( float target_climb_rate );
+        int16_t     get_maritime_dash_dir_angle( void ) ;
+        int16_t     get_maritime_offset_angle(void) ;
+        void        calc_althold_lean_req_nwse();
+
+        // state runs
+        void        run_OnGround( float &target_roll, float &target_pitch, float targ_climb_rate) ;
+        void        run_PreDash( float &target_roll, float &target_pitch, Vector3f &des_vel ) ;
+        void        run_Dash( float &target_roll, float &target_pitch ) ;
+        void        run_PostDash( float &target_roll, float &target_pitch ) ;
+        void        run_Release( float &target_roll, float &target_pitch ) ;
+        void        run_Takeoff( Vector3f &des_vel_neu_cms, Vector3f &targ_vel,Vector3f &dist_vec ) ;
+        void        run_InitAsc(Vector3f &des_vel_neu_cms, Vector3f &targ_vel, Vector3f &dist_vec_offs, Vector3f &req_pilot_vel) ;
+        void        run_SlowToDashAlt(Vector3f &des_vel_neu_cms, Vector3f &targ_vel, Vector3f &dist_vec_offs, Vector3f &req_pilot_vel);
+
+        // state starts
+        void        start_PreDash(void) ;
+        void        start_Dash(void) ;
+        void        start_PostDash(void) ;
+        void        start_InitAsc(void) ;
+        void        start_SlowToDashAlt(void);
+
+        //internal variables
+        float               _dash_EWlean ;
+        float               _dash_NSlean ;
+        uint32_t            _last_log_ms;
+        float               _dash_factor ;
+        float               _ascent_rate ;
+        bool                _release_alert;
+        bool                _released;                      // tracks whether or not user hit release or not.
+        AutoLaunchState     _aLaunch_state ;
+        int32_t             _state_start_time;              // time current state started in msec.
+        bool                _state_complete ;               // bool to notify if the current state has finished.
+        int32_t             _state_time ;                   // time spent in current state.
+        MaritimeDashDir     _dash_dir;             // holds currently configured dash_direction
+        MaritimeDashDir     _last_dash_dir ;                // holds the dash dir from last iteration to enabling messaging on changes
+        Vector3f            _ALoffsetNED ;                  // NED offsets for offseting follow mode from target puck
+        ModeFollow          FollowModeAccess;               // pointer to access follow mode submethods.
+        float               _slow_down_z_dist;
+        float               _end_predash_factor ;
+        float               _InitAsc_exit_vel;
+        float               _m_EWlean;
+        float               _m_NSlean;
+        float               _b_EWlean;
+        float               _b_NSlean;
+
+        // servo instances.
+        SRV_Hood_HAL*       _lock_servo ;
+        SRV_Hood_HAL*       _release_servo ;
+} ;
+#endif
 
 #if MODE_ZIGZAG_ENABLED == ENABLED
 class ModeZigZag : public Mode {        
