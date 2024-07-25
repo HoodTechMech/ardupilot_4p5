@@ -18,7 +18,7 @@ bool ModeAltHold::init(bool ignore_checks)
     pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // Turn blower on if copter is armed.
-    // if(motors->armed()) g2.ht_launch.blower_on(); // #TODO
+    if(motors->armed()) g2.ht_launch.blower_on();
 
     return true;
 }

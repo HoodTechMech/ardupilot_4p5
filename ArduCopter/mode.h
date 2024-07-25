@@ -1870,6 +1870,8 @@ class ModeHoodAuto : public ModeGuided
     public:
         // inherit constructor
     using ModeGuided::Mode;
+    Number mode_number() const override { return Number::LAUNCH; }
+
     bool init(bool ignore_checks) override;
     bool ready_to_arm(void) ;
 

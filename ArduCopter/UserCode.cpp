@@ -20,6 +20,8 @@ void Copter::userhook_init()
 
 	RC7_SwitchPos = RC_Channel::AuxSwitchPos::MIDDLE;
 	channel_rc7 = rc().channel(RC7_CH_INDEX) ;
+
+	rc_chan_release = rc().channel(RELEASE_BUTTON_RC_INDEX);
 }
 #endif
 
@@ -40,7 +42,16 @@ void Copter::userhook_50Hz()
 #ifdef USERHOOK_MEDIUMLOOP
 void Copter::userhook_MediumLoop()
 {
-    // put your 10Hz code here
+    // 10Hz code
+
+	// keep track of the state of the ARM button.
+	arm_switch_state_machine() ;
+
+	// keep track of the state of the unlock/lock buttons
+	lock_unlock_state_machine() ;
+
+	// keep track of the state of the release button.
+	release_state_machine();
 }
 #endif
 
@@ -54,7 +65,14 @@ void Copter::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Copter::userhook_SuperSlowLoop()
 {
-    // put your 1Hz code here
+    // 1Hz code
+
+	// give pilot a counter to when they should take off.
+	takeoff_countdown_msg();
+
+	#if MODE_LAUNCH_ENABLED==ENABLED
+		g2.ht_launch.blower_off_check();
+	#endif
 }
 #endif
 
@@ -220,7 +238,6 @@ void Copter::lock_unlock_state_machine( void )
 
 		// update the state of the servo.
 		if(update_servo_state( lock_unlock_servo, _lock_servo_state)){
-		/*	#TODO: after HT_Launch is added, uncomment this.
 			// delete the reference.
 			delete lock_unlock_servo;
 			HT_Launch *ht_launch = AP::ht_launch() ;
@@ -239,7 +256,6 @@ void Copter::lock_unlock_state_machine( void )
 				}
 				gcs().send_text(MAV_SEVERITY_WARNING, "LOCKED" ) ;
 			}
-		*/
 		} else {
 			gcs().send_text(MAV_SEVERITY_WARNING, "CHECK SERVO SETUP" ) ;
 		}
@@ -254,9 +270,8 @@ void Copter::release_state_machine( void )
 	jj++; //DEBUG?
 
 	// attempt to read the RC channel.
-	if (!rc().channel(RELEASE_BUTTON_RC_INDEX)->read_3pos_switch(_release_switchPos)){
-		//if cannot read the RC chan, the set LOW = SAFE.
-		_release_switchPos = RC_Channel::AuxSwitchPos::LOW; //is this the safe option?
+	if(!rc_chan_release->read_3pos_switch(_release_switchPos)) {
+		_release_switchPos = RC_Channel::AuxSwitchPos::LOW;
 	}
 
 	// turn switch Pos into state.
@@ -267,7 +282,7 @@ void Copter::release_state_machine( void )
 			lock_unlock_servo = new SRV_Hood_HAL( SRV_Hood_HAL::k_lock ) ;
 			if( !lock_unlock_servo->get_servo_safe() ) {
 				if((copter.get_mode() ==  (uint8_t) Mode::Number::ALT_HOLD)
-					//||(copter.get_mode() ==  (uint8_t) Mode::Number::LAUNCH) #TODO: uncomment after Launch is added.
+					||(copter.get_mode() ==  (uint8_t) Mode::Number::LAUNCH)
 					||(!AP_Notify::flags.armed)){
 					new_release_servo_state = eServo_state::UNSAFE ;
 				}
@@ -288,6 +303,7 @@ void Copter::release_state_machine( void )
 
 	if( _release_servo_state != new_release_servo_state){
 
+		gcs().send_text(MAV_SEVERITY_WARNING,"diff rel serv sts");
 		if(copter.allow_release()) {
 			_release_servo_state = new_release_servo_state;
 
@@ -315,7 +331,7 @@ bool Copter::allow_release()
 	if(!motors->armed()) return true;
 
 	switch(copter.flightmode->mode_number()){
-		//case Mode::Number::LAUNCH:		return (copter.mode_autoLaunch.allow_release()); #TODO: uncomment after launch is added.
+		case Mode::Number::LAUNCH:		return (copter.mode_Launch.allow_release());
 		case Mode::Number::ALT_HOLD:	return true;
 		default: 						return false;
 	}

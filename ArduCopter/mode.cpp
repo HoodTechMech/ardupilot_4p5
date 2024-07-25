@@ -69,11 +69,13 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 
 #if MODE_GUIDED_ENABLED == ENABLED
         case Mode::Number::GUIDED:
+            gcs().send_text(MAV_SEVERITY_WARNING,"GUIDEDM");
             ret = &mode_guided;
             break;            
 #endif
 #if MODE_LAUNCH_ENABLED == ENABLED
         case Mode::Number::LAUNCH:
+            gcs().send_text(MAV_SEVERITY_WARNING,"LAUNCHM");
             ret = &mode_Launch;
             break;
 #endif

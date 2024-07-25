@@ -37,6 +37,7 @@ eServo_state _release_servo_state = eServo_state::NONE;
 RC_Channel::AuxSwitchPos RC7_SwitchPos ;
 
 RC_Channel *channel_rc7 ;
+RC_Channel *rc_chan_release;
 
 
 #endif  // USERHOOK_VARIABLES
