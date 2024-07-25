@@ -71,7 +71,7 @@ void Mode::_TakeOff::stop()
 //  take off is complete when the vertical target reaches the take off altitude.
 //  climb is cancelled if pilot_climb_rate_cm becomes negative
 //  sets take off to complete when target altitude is within 1% of the take off altitude
-void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
+void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm, bool override_throttle)
 {
     // return pilot_climb_rate if take-off inactive
     if (!_running) {
@@ -80,7 +80,11 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
 
     if (copter.ap.land_complete) {
         // send throttle to attitude controller with angle boost
-        float throttle = constrain_float(copter.attitude_control->get_throttle_in() + copter.G_Dt / copter.g2.takeoff_throttle_slew_time, 0.0, 1.0);
+        float throttle;
+        if(override_throttle) throttle=1.0f;
+        else {
+            throttle = constrain_float(copter.attitude_control->get_throttle_in() + copter.G_Dt / copter.g2.takeoff_throttle_slew_time, 0.0, 1.0);
+        }
         copter.attitude_control->set_throttle_out(throttle, true, 0.0);
         // tell position controller to reset alt target and reset I terms
         copter.pos_control->init_z_controller();

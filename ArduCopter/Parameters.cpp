@@ -1194,6 +1194,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
     // https://github.com/skybrush-io/ardupilot
 
+ #if MODE_LAUNCH_ENABLED == ENABLED
+    AP_SUBGROUPINFO(ht_launch, "AL", 63,ParametersG2, HT_Launch),
+#endif
+
+#if MODE_RECOVERY_ENABLED == ENABLED
+    // @Group: RCVY
+    // @Path: ../ArduCopter/HT_Recovery.cpp
+    AP_SUBGROUPINFO(ht_recovery, "AR", 64, ParametersG2, HT_Recovery),
+#endif   
     AP_GROUPEND
 };
 
@@ -1295,6 +1304,12 @@ ParametersG2::ParametersG2(void)
 #endif
 #if MODE_FOLLOW_ENABLED == ENABLED
     ,follow()
+#endif
+#if MODE_LAUNCH_ENABLED == ENABLED
+    ,ht_launch()
+#endif
+#if MODE_RECOVERY_ENABLED == ENABLED
+    ,ht_recovery()
 #endif
 #if USER_PARAMS_ENABLED == ENABLED
     ,user_parameters()

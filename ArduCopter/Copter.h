@@ -1077,14 +1077,13 @@ private:
 #if MODE_TURTLE_ENABLED == ENABLED
     ModeTurtle mode_turtle;
 #endif
-//#TODO: uncomment the modes
-// #if MODE_LAUNCH_ENABLED == ENABLED
-//     ModeLaunch mode_autoLaunch ;  //230410 HOODTECH -losh
-// #endif
+#if MODE_LAUNCH_ENABLED == ENABLED
+    ModeLaunch mode_Launch ;  //230410 HOODTECH -losh
+#endif
 
-// #if MODE_RECOVERY_ENABLED == ENABLED
-//     ModeAutoRecovery mode_autoRecovery;
-// #endif
+#if MODE_RECOVERY_ENABLED == ENABLED
+    ModeAutoRecovery mode_Recovery;
+#endif
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);

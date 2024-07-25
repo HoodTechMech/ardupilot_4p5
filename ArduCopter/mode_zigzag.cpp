@@ -352,7 +352,7 @@ void ModeZigZag::manual_control()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate);
+        takeoff.do_pilot_takeoff(target_climb_rate,false);
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:

@@ -141,7 +141,7 @@ void ModePosHold::run()
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate);
+        takeoff.do_pilot_takeoff(target_climb_rate,false);
 
         // init and update loiter although pilot is controlling lean angles
         loiter_nav->clear_pilot_desired_acceleration();

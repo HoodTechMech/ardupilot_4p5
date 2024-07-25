@@ -252,7 +252,6 @@ ModeLaunch::AutoLaunchState ModeLaunch::get_aLaunch_state( float target_climb_ra
     switch( althold_state ){
         case AltHoldModeState::Takeoff:
             return AutoLaunchState::aLaunch_Takeoff;
-            break;
         case AltHoldModeState::Flying:
         {
             if(_state_complete)
@@ -636,7 +635,7 @@ void ModeLaunch::run_Takeoff( Vector3f &des_vel_neu_cms, Vector3f &targ_vel, Vec
     target_climb_rate = constrain_float( g.pilot_speed_up, 0, g.pilot_speed_up);
 
     // get take-off adjusted pilot and takeoff climb rates
-    takeoff.do_pilot_takeoff(target_climb_rate); 
+    takeoff.do_pilot_takeoff(target_climb_rate,true); 
 
     // match target velocities to the target, and target a gentle ascent rate.
     des_vel_neu_cms.x = (targ_vel.x * 100.0f);
@@ -650,6 +649,7 @@ void ModeLaunch::run_Takeoff( Vector3f &des_vel_neu_cms, Vector3f &targ_vel, Vec
         if(set_autolaunch_NED_offsets()) _state_complete = true;
         else { send_copter_home(); }
     }
+    _state_complete=true;
 }
 
 

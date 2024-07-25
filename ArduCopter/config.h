@@ -223,7 +223,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // System ID - conduct system identification tests on vehicle
 #ifndef MODE_SYSTEMID_ENABLED
-# define MODE_SYSTEMID_ENABLED HAL_LOGGING_ENABLED
+// # define MODE_SYSTEMID_ENABLED HAL_LOGGING_ENABLED
+# define MODE_SYSTEMID_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -241,7 +242,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Turtle - allow vehicle to be flipped over after a crash
 #ifndef MODE_TURTLE_ENABLED
-# define MODE_TURTLE_ENABLED HAL_DSHOT_ENABLED && FRAME_CONFIG != HELI_FRAME
+// # define MODE_TURTLE_ENABLED HAL_DSHOT_ENABLED && FRAME_CONFIG != HELI_FRAME
+# define MODE_TURTLE_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

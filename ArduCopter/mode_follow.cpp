@@ -213,7 +213,7 @@ void ModeFollow::run()
             desired_velocity_neu_cms.y = (vel_of_target.y * 100.0f);
             desired_velocity_neu_cms.z = (-_pilot_vel.z * 100.0f);
 
-            takeoff.do_pilot_takeoff( _pilot_vel.z );
+            takeoff.do_pilot_takeoff( _pilot_vel.z, false );
 
             // HOODTECH MOD -losh, 220905
             allow_upward_nudging = false ;  //since copter is taking off, reset allow up nudge.

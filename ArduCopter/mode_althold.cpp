@@ -75,7 +75,7 @@ void ModeAltHold::run()
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate);
+        takeoff.do_pilot_takeoff(target_climb_rate,false);
         break;
 
     case AltHoldModeState::Flying:
@@ -104,4 +104,12 @@ void ModeAltHold::run()
 
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
+}
+
+void ModeAltHold::exit()
+{
+#if MODE_LAUNCH_ENABLED == ENABLED
+    // if leaving altHold, make sure blower is off.
+    g2.ht_launch.set_blower_off_time();
+#endif
 }

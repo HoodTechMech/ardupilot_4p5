@@ -70,9 +70,21 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 #if MODE_GUIDED_ENABLED == ENABLED
         case Mode::Number::GUIDED:
             ret = &mode_guided;
+            break;            
+#endif
+#if MODE_LAUNCH_ENABLED == ENABLED
+        case Mode::Number::LAUNCH:
+            ret = &mode_Launch;
             break;
 #endif
-
+#if MODE_RECOVERY_ENABLED == ENABLED
+        case Mode::Number::RECOVERY_LOW:
+            ret = &mode_Recovery;
+            break ;
+        case Mode::Number::RECOVERY_HIGH:
+            ret = &mode_Recovery;
+            break ;
+#endif
         case Mode::Number::LAND:
             ret = &mode_land;
             break;
@@ -254,6 +266,26 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     const ModeReason last_reason = _last_reason;
     _last_reason = reason;
 
+    // HOOD mode override.  This allows the shift button to invoke different modes.
+    if(!motors->armed()){
+        // see if shift button is pushed.
+        if(rc7_state_machine()){
+            switch(mode){
+                case Mode::Number::LOITER:
+                    mode = Mode::Number::LAUNCH;
+                    break;
+                case Mode::Number::FOLLOW: FALLTHROUGH;
+                case Mode::Number::RTL:
+                    mode = Mode::Number::RECOVERY_HIGH;
+                    break;
+                case Mode::Number::ALT_HOLD:
+                    mode = Mode::Number::RECOVERY_LOW;
+                    break;
+                default: break;
+            }
+        }
+    }
+
     // return immediately if we are already in the desired mode
     if (mode == flightmode->mode_number()) {
         control_mode_reason = reason;
@@ -267,6 +299,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         }
         return true;
     }
+
+    // save candidate mode so that Recovery can know which mode its attempting to switch to.
+    mode_candidate = mode;
 
     // Check if GCS mode change is disabled via parameter
     if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled(mode)) {
@@ -398,6 +433,31 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     // make happy noise
     if (copter.ap.initialised) {
         AP_Notify::events.user_mode_change = 1;
+    }
+
+    // HOOD Mod. -losh 230530.
+    // close the lock servo. after every mode change.? Is this really a good idea?
+    SRV_Hood_HAL* release_servo_in_mode = new SRV_Hood_HAL( SRV_Hood_HAL::k_release ) ;
+    if( release_servo_in_mode!=nullptr) {
+        if(!release_servo_in_mode->set_servo_safe()){
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"CHECK REL SRV CFG") ;
+        }
+        delete release_servo_in_mode ;
+    }
+    // HOOD Mod. -losh 230530.
+    // close the lock servo. after every mode change.? Is this really a good idea?
+    SRV_Hood_HAL* lock_unlock_servo_in_mode = new SRV_Hood_HAL( SRV_Hood_HAL::k_lock ) ;
+    if( lock_unlock_servo_in_mode!=nullptr) {
+        if(!lock_unlock_servo_in_mode->get_servo_safe()){
+            if(lock_unlock_servo_in_mode->set_servo_safe()) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "LOCKED [%d]",(uint8_t)mode) ;
+                HT_Launch *ht_launch = AP::ht_launch() ;
+                if(ht_launch!=nullptr) ht_launch->set_lockservo_state(COMMUNIC_SAFE) ;
+            } else {
+                gcs().send_text(MAV_SEVERITY_CRITICAL,"CHECK LCK SRV CFG") ;
+            }
+            delete lock_unlock_servo_in_mode ;
+        }
     }
 
     // return success

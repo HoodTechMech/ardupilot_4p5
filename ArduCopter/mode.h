@@ -97,7 +97,9 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
-
+        LAUNCH =       200,
+        RECOVERY_LOW = 211,    // HOODTECH MOD, losh 230824, an attempt at an auto aircraft recovery mode.
+        RECOVERY_HIGH= 212,    // HOODTECH MOD, losh 231113, attempt to have low/high alts for recov.
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
     };
@@ -274,7 +276,7 @@ protected:
     public:
         void start(float alt_cm);
         void stop();
-        void do_pilot_takeoff(float& pilot_climb_rate);
+        void do_pilot_takeoff(float& pilot_climb_rate, bool override_throttle);
         bool triggered(float target_climb_rate) const;
 
         bool running() const { return _running; }
@@ -464,7 +466,7 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
-
+    void exit() override;
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
@@ -1935,7 +1937,7 @@ public:
 
     protected:
 
-        const char *name() const override { return "AULA"; }
+        const char *name() const override { return "LAUNCH"; }
         const char *name4() const override { return "AULA"; }
 
 	    // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
