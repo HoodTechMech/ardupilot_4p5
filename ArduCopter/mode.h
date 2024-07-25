@@ -1832,6 +1832,13 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return true; }
 
+    // Hood fn defns
+    //
+    bool ready_to_arm();
+    // calc desired velocities from offset vector and target velocity.
+    void calc_des_vel( Vector3f &des_vel_neu_cms, Vector3f &dest_offs_vect,
+                       Vector3f &targ_vel,Vector3f &pilot_vel) ;
+
 protected:
 
     const char *name() const override { return "FOLLOW"; }
@@ -1843,6 +1850,13 @@ protected:
     int32_t wp_bearing() const override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
+
+    // HOODTECH MOD, losh 220902.
+    bool        pilot_nudging;          // boolean to keep track of whether or not user has been adjusting nudge
+    bool        allow_upward_nudging;   // bool to keep track of whether we are allowing the user to adjust pilot nudge in the up direction yet.
+    float       Z_alt_up_nudge_allowed; // holds Zoffset for checking if a takeoff has occured.
+    float       old_pilot_vel_z;        // used to lowpass pilot input,
+    uint16_t    stick_LP;               // moved this to class instead of global on mode_follow.cpp
 };
 #endif
 
