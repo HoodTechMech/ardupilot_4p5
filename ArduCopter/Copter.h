@@ -223,12 +223,12 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+    friend class ModeHoodAuto;  //240112, HOOD, losh,    
     //#TODO: uncomment friend classes after they are added.
     // friend class HT_Recovery;   // HOODTECH MOD, losh, 231113 added so I can access control_mode to do diff heights based on HIGH/LOW mode request.
     // friend class ModeAutoLaunch; //230410 HOODTECH losh
     // friend class HT_Launch;
     // friend class ModeAutoRecovery;
-    // friend class ModeHoodAuto;  //240112, HOOD, losh,    
 
     friend class _AutoTakeoff;
 

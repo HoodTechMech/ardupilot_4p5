@@ -1860,6 +1860,58 @@ protected:
 };
 #endif
 
+// This is just the common methods of hood auto modes.  It never gets instaniated
+// by itself.
+class ModeHoodAuto : public ModeGuided
+{
+    public:
+        // inherit constructor
+    using ModeGuided::Mode;
+    bool init(bool ignore_checks) override;
+    bool ready_to_arm(void) ;
+
+    protected:
+    //--- variables ---
+    float       _bearing_to_target;
+    float       _dist_to_target;
+    float       _yaw_rate_LP ;
+    float       _roll_LP ;
+    float       _pitch_LP ;
+    float       _yaw_LP  ;
+
+    // --- methods ---
+    virtual bool    check_parameters(void) {return true;};
+    // for reporting to GCS
+    bool        get_wp(Location &loc) const override;
+    uint32_t    wp_distance() const override;
+    int32_t     wp_bearing() const override;
+
+
+    bool        is_maritime(void) ;
+    bool        get_target_dist_and_velocity_ned( Vector3f &dist_v, Vector3f &dist_v_offset, Vector3f &vel_of_targ ) ;
+    bool        get_diff_vec( Vector3f &diffvec ) ;
+    float       cosine_increase_decrease( float t, float T, float amp, float offset ) ;
+    float       cosine_change(int32_t t, int32_t T_ticks, float start, float end);
+    bool        get_horiz_copter_to_home_vector( Vector2f &vec) ;
+    bool        get_horiz_copter_to_target_vector(Vector2f &vec) ;
+    bool        send_copter_home(void);
+    Vector3f    update_pilot_nudge(Vector3f &req_pilot_vel) ;
+    void        check_for_landing(void);
+
+
+    // lowpass data
+    void        low_pass_ahrs( float old_fact, float new_fact ) ;
+    void        low_pass_ahrs( bool );
+    float       get_LP_yaw(void)        {return _yaw_LP;    };
+    float       get_LP_roll(void)       {return _roll_LP;   };
+    float       get_LP_pitch(void)      {return _pitch_LP;  };
+    float       get_LP_yawrate(void)    {return _yaw_rate_LP;};
+    //overload
+    //void        low_pass_ahrs(float old_fact, float new_fact) { low_pass_ahrs(old_fact, new_fact, false) ; } ;
+
+};
+
+#if MODE_ZIGZAG_ENABLED == ENABLED
 class ModeZigZag : public Mode {        
 
 public:
@@ -1956,6 +2008,7 @@ private:
     int16_t line_num = 0;           // target line number
     bool is_suspended;              // true if zigzag auto is suspended
 };
+#endif
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
 class ModeAutorotate : public Mode {
