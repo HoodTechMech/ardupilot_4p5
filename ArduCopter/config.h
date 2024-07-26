@@ -255,7 +255,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Recovery - auto hover and detect fixed wing arrival, descend to pole.
 #ifndef MODE_RECOVERY_ENABLED
-# define MODE_RECOVERY_ENABLED DISABLED
+# define MODE_RECOVERY_ENABLED ENABLED
 #endif
 
 

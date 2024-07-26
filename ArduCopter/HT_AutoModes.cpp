@@ -65,8 +65,9 @@ bool ModeHoodAuto::init(bool ignore_checks)
             gcs().send_text(MAV_SEVERITY_WARNING,"non-negative Zoffset");
             return false;
         }
-        if(!ModeGuided::init(ignore_checks)) return false;
     }
+    
+    if(!ModeGuided::init(ignore_checks)) return false;
 
     // init the WPnav module.
     wp_nav->wp_and_spline_init();
@@ -76,9 +77,9 @@ bool ModeHoodAuto::init(bool ignore_checks)
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // if pos control hasnt been used recently, init it.
-    if (!pos_control->is_active_z()) {
+    // if (!pos_control->is_active_z()) {
         pos_control->init_z_controller_no_descent();
-    }
+    // }
     // initialise wpnav to stopping point
     Vector3f stopping_point;
     wp_nav->get_wp_stopping_point(stopping_point);
@@ -86,6 +87,7 @@ bool ModeHoodAuto::init(bool ignore_checks)
     // no need to check return status because terrain data is not used
     wp_nav->set_wp_destination(stopping_point, false);
 
+    
     low_pass_ahrs(true) ;
     return true;
 }

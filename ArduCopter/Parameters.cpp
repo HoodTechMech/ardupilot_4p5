@@ -1188,20 +1188,20 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // ID 60 is reserved for the SHIP_OPS
 
-    // extend to a new group
-    AP_SUBGROUPEXTENSION("", 61, ParametersG2, var_info2),
+    // // extend to a new group
+    // AP_SUBGROUPEXTENSION("", 61, ParametersG2, var_info2),
 
-    // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
-    // https://github.com/skybrush-io/ardupilot
+    // // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
+    // // https://github.com/skybrush-io/ardupilot
 
  #if MODE_LAUNCH_ENABLED == ENABLED
-    AP_SUBGROUPINFO(ht_launch, "AL", 63,ParametersG2, HT_Launch),
+    AP_SUBGROUPINFO(ht_launch, "AL", 60,ParametersG2, HT_Launch),
 #endif
 
 #if MODE_RECOVERY_ENABLED == ENABLED
     // @Group: RCVY
     // @Path: ../ArduCopter/HT_Recovery.cpp
-    AP_SUBGROUPINFO(ht_recovery, "AR", 64, ParametersG2, HT_Recovery),
+    AP_SUBGROUPINFO(ht_recovery, "AR", 61, ParametersG2, HT_Recovery),
 #endif   
     AP_GROUPEND
 };

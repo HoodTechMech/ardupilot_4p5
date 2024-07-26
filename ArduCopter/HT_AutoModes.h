@@ -6,7 +6,7 @@
 
 // takeoff params
 #define TAKEOFF_PITCHROLL_LIM   500.0f    // limit in degrees for roll/pitch at takeoff.
-#define TAKEOFF_MIN_ALT         50.0f   // Min height the copter will do in takeoff hop
+#define TAKEOFF_MIN_ALT         10.0f   // Min height the copter will do in takeoff hop
 #define TAKEOFF_MAX_ALT         400.0f  // max height copter will do in take off hop.
 
 #define LOG_PD                  50      // msec

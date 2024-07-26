@@ -57,6 +57,14 @@ void ModeGuided::run()
         return;
     }
 
+            AP::logger().Write( "GDDB",     //log category name.
+                            "TimeUS,mode",    //names
+                            "s-",   //units
+                            "F0",   //scaling
+                            "Qb",   //format
+                            AP_HAL::micros64(),
+                            (int8_t) guided_mode
+                             );
     // call the correct auto controller
     switch (guided_mode) {
 

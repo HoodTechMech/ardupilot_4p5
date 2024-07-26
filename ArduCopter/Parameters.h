@@ -606,6 +606,11 @@ public:
     HT_Launch ht_launch;
 #endif
 
+#if MODE_RECOVERY_ENABLED == ENABLED
+    // hood recovery mode
+    HT_Recovery ht_recovery;
+#endif
+
 #if USER_PARAMS_ENABLED == ENABLED
     // User custom parameters
     UserParameters user_parameters;

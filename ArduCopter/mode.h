@@ -1924,6 +1924,7 @@ public:
 
     // inherit constructor
     using ModeHoodAuto::Mode;
+    Number mode_number() const override { return Number::LAUNCH; }
 
     // public methods.
     bool init(bool ignore_checks) override;
@@ -2041,6 +2042,128 @@ public:
         SRV_Hood_HAL*       _lock_servo ;
         SRV_Hood_HAL*       _release_servo ;
 } ;
+#endif
+
+#if MODE_RECOVERY_ENABLED == ENABLED
+class ModeRecovery : public ModeHoodAuto
+{
+public:
+    // inherit constructor
+    using ModeHoodAuto::Mode;
+    Number mode_number() const override { return Number::RECOVERY_HIGH; }
+
+    // public methods.
+    bool init(bool ignore_checks) override;
+    void run() override;
+    void stop() ;
+    bool ready_to_arm();
+    bool requires_GPS() const override { return true; };
+    bool has_manual_throttle() const override { return false; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; };
+    bool has_user_takeoff(bool must_navigate) const override { return true; };
+    bool in_guided_mode() const override { return false; };
+
+protected:
+    const char *name() const override { return "RECV"; }
+    const char *name4() const override { return "RECV"; }
+
+    // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
+    enum class RecoveryState
+    {
+        ContinuePrevSt,         // 0
+        OnTheGround,            // 1
+        TakeOff,                // 2
+        ClimbToHover,           // 3
+        Hover,                  // 4
+        BlowinInTheWind,        // 5
+        ReturnToStation,        // 6
+        WaitForWreckingBall,    // 7
+        FastDescentLoaded,      // 8
+        DescentToPole,          // 9
+        FastDescentUnLoaded,    // 10
+        GaffHover,              // 11
+        ReCenterOverLanding,    // 12
+        Land,                   // 13
+        SpoolDown,              // 14
+        ManualLand,             // 15
+    };
+
+    enum PauseStateEnum
+    {
+        Unpaused,
+        Paused,
+        NewlyUnpaused,
+        NewlyPaused
+    };
+
+    bool check_parameters(void) override ;
+
+private:
+    // private methods.
+    RecoveryState get_aRecovery_state(float target_climb_rate, ModeRecovery::RecoveryState prevstate);
+    void        update_wp_dist_bearing(void);
+    // bool is_maritime(void);
+    void update_pause_state(void);
+    bool calculate_pause_vectorNED(Vector3f &pauseVector_NED);
+    void calc_offsets_with_pause( bool allow_nudging, Vector3f &dist_vec_offs, Vector3f &dist_vec, Vector3f &pilot_nudges, Vector3f &req_pilot_vel);
+    void override_Vz_with_pausing( Vector3f &desired_velocity_neu_cms);
+    void check_if_state_complete(void);
+    bool stuck_winch(void);
+    bool state_time_elapsed(void) ;
+    uint32_t calc_state_dur_limit(void) ;
+    void update_hover_time(void);
+    void update_pause_time(void);
+    bool get_V3f_to_current_target_pos(Vector3f &current_target_diffvec);
+    bool rope_impact_check(bool init) ;
+    // overload.
+    bool rope_impact_check(void) { return rope_impact_check(false); }
+    bool pilot_request_to_move_on(void);
+
+    // state runs
+    void run_aRecovery_OnGround(Vector3f &des_vel_neu_cms);
+    void run_TakeOff(Vector3f &des_vel_neu_cms, Vector3f &targ_vel);
+
+    // state starts
+    void start_Takeoff(void);
+    void start_ClimbToHover(void);
+    void start_Hover(void);
+    void start_BlowinInTheWind(void) ;
+    void start_ReturnToStation(void);
+    void start_WaitForWreckingBall(void) ;
+    void start_FastDescentLoaded(void);
+    void start_SlowDescentToPole(void);
+    void start_FastDescentUnLoaded(void);
+    void start_GaffHover(void);
+    void start_ReCenterOverLanding(void);
+    void start_Land(void);
+    void start_manualLand(void);
+
+    // internal variables
+    uint32_t            _last_log_ms;
+    RecoveryState       _state;
+    RecoveryState       _next_state;
+    ModeFollow          FollowModeAccess;          // pointer to access follow mode submethods.
+    PauseStateEnum      _pause_State;
+    int32_t             _pause_time;
+    Vector3f            _offsetNED;
+    Vector3f            _pause_vectorNED;
+    Vector3f            _starting_offset_puck_NED;           // offsets to the puck at arming.
+    uint32_t            _current_state_time;
+    uint32_t            _current_state_duration_limit;
+    bool                _takeoff_initiated;
+    float               _override_velocity_z_cms_neu;
+    float               _old_vel_override_z_cms;
+    int16_t             _vel_change_counter;
+    float               _slow_down_z_dist ;
+    bool                _log_request ;
+    float               _orig_yawratekP ;
+    bool                _rc7_button_on_arm;
+
+    //debug
+    AltHoldModeState    _althold_st;
+    bool                _takeoff_complete;
+};
 #endif
 
 #if MODE_ZIGZAG_ENABLED == ENABLED

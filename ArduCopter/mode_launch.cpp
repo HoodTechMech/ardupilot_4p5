@@ -649,7 +649,6 @@ void ModeLaunch::run_Takeoff( Vector3f &des_vel_neu_cms, Vector3f &targ_vel, Vec
         if(set_autolaunch_NED_offsets()) _state_complete = true;
         else { send_copter_home(); }
     }
-    _state_complete=true;
 }
 
 

@@ -63,7 +63,10 @@ void Mode::_TakeOff::stop()
     // Check if we have progressed far enough through the takeoff process that the
     // aircraft may have left the ground but not yet detected the climb.
     if (copter.attitude_control->get_throttle_in() > copter.get_non_takeoff_throttle()) {
+        copter.gcs().send_text(MAV_SEVERITY_ALERT,"trysetLandCompFalse");
         copter.set_land_complete(false);
+        copter.gcs().send_text(MAV_SEVERITY_ALERT,"setLandCompFalse");
+
     }
 }
 
@@ -109,6 +112,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm, bool override_
         // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
         if (is_negative(pilot_climb_rate_cm) ||
             (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt) {
+                copter.gcs().send_text(MAV_SEVERITY_ALERT,"stopTO");
             stop();
         }
     }
