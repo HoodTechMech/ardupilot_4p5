@@ -111,6 +111,13 @@ extern AP_IOMCU iomcu;
 #endif
 
 #include <ctype.h>
+#include "../../ArduCopter/HT_Launch.h"
+#include "../../ArduCopter/HT_Recovery.h"
+
+//HOODTECH MOD, losh 230420.  added defined scaling so its easier to change later. 
+// this is multiplied by current (kept in amps by battery subsys) before sending out
+// in various mavlink msgs.
+#define SEND_AMPS_SCALING 10 
 
 extern const AP_HAL::HAL& hal;
 
@@ -337,7 +344,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     const int8_t percentage = battery_remaining_pct(instance);
     
     if (battery.current_amps(current, instance)) {
-         current = constrain_float(current * 100,-INT16_MAX,INT16_MAX);
+         current = constrain_float(current * SEND_AMPS_SCALING,-INT16_MAX,INT16_MAX);
     } else {
         current = -1;
     }
@@ -360,7 +367,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     MAV_BATTERY_TYPE_UNKNOWN, // type
                                     got_temperature ? ((int16_t) (temp * 100)) : INT16_MAX, // temperature. INT16_MAX if unknown
                                     cell_mvolts, // cell voltages
-                                    current,      // current in centiampere
+                                    current,      // current in deciampere
                                     consumed_mah, // total consumed current in milliampere.hour
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     constrain_int16(percentage, -1, 100),
@@ -2277,41 +2284,73 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
     float press_abs = 0.0f;
     int16_t temperature = 0; // Absolute pressure temperature
     int16_t temperature_press_diff = 0; // Differential pressure temperature
-    if (instance < barometer.num_instances()) {
-        press_abs = barometer.get_pressure(instance) * 0.01f;
-        temperature = barometer.get_temperature(instance)*100;
-        have_data = true;
-    }
-
     float press_diff = 0; // pascal
-#if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr &&
-        airspeed->enabled(instance)) {
-        press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
-        float temp;
-        if (airspeed->get_temperature(instance,temp)) {
-            temperature_press_diff = temp * 100;
-            if (temperature_press_diff == 0) {
-                // don't send zero as that is the value for 'no data'
-                temperature_press_diff = 1;
-            }
+
+    if(instance==0) {
+    //normal case, send baro info.
+        if (instance < barometer.num_instances()) {
+            press_abs = barometer.get_pressure(instance) * 0.01f;
+            temperature = barometer.get_temperature(instance)*100;
+            have_data = true;
         }
-        have_data = true;
-    }
-#endif
 
-    if (!have_data) {
-        return;
+    #if AP_AIRSPEED_ENABLED
+        AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+        if (airspeed != nullptr &&
+            airspeed->enabled(instance)) {
+            press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
+            float temp;
+            if (airspeed->get_temperature(instance,temp)) {
+                temperature_press_diff = temp * 100;
+                if (temperature_press_diff == 0) {
+                    // don't send zero as that is the value for 'no data'
+                    temperature_press_diff = 1;
+                }
+            }
+            have_data = true;
+        }
+    #endif
+
+        if (!have_data) {
+            return;
+        }
+
+        send_fn(
+            chan,
+            AP_HAL::millis(),
+            press_abs, // hectopascal
+            press_diff, // hectopascal
+            temperature, // 0.01 degrees C
+            temperature_press_diff); // 0.01 degrees C
+
+    } else if(instance ==1){
+        // HOODTECH MOD 230922
+        // Hack pressure scaled message to send autoLaunch State info.
+        HT_Launch *ht_launch = AP::ht_launch() ;
+        if(ht_launch!=nullptr) {
+        send_fn(
+            chan,
+            AP_HAL::millis(),
+            ((float) ht_launch->get_remaining_rel_window())/1000,
+            (float) ht_launch->get_dash_dir(),
+            (int16_t) ht_launch->get_lockservo_state(),
+            (int16_t) 0);
+        } //else { gcs().send_text(MAV_SEVERITY_ALERT,"no ht automode");}
+    } else if(instance ==2){
+        // HOODTECH MOD 230922
+        // Hack pressure scaled message to send Recovery State info.
+        HT_Recovery *ht_recovery = AP::ht_recovery() ;
+        if(ht_recovery!=nullptr) {
+        send_fn(
+            chan,
+            AP_HAL::millis(),
+            ((float) ht_recovery->get_remain_hover_time()/1000),
+            ((float) ht_recovery->get_remain_pause_time()/1000),
+            (int16_t) ht_recovery->get_capture_height(),
+            (int16_t) 0);
+        } //else { gcs().send_text(MAV_SEVERITY_ALERT,"no ht_recov*");}
     }
 
-    send_fn(
-        chan,
-        AP_HAL::millis(),
-        press_abs, // hectopascal
-        press_diff, // hectopascal
-        temperature, // 0.01 degrees C
-        temperature_press_diff); // 0.01 degrees C
 }
 
 void GCS_MAVLINK::send_scaled_pressure()
