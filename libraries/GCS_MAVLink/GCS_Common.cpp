@@ -4965,6 +4965,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_int_t &packet
 #if AP_ARMING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
+                gcs().send_text(MAV_SEVERITY_ALERT,"ARM-DISARM %2.1f", packet.param1);
+
     if (is_equal(packet.param1,1.0f)) {
         if (AP::arming().is_armed()) {
             return MAV_RESULT_ACCEPTED;
@@ -4987,6 +4989,31 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
         }
         return MAV_RESULT_FAILED;
     }
+        if (is_equal(packet.param1,2.0f)) {
+            gcs().send_text(MAV_SEVERITY_ALERT,"2.0 msg");
+            // HODDMOD, -losh 231004
+            // if already armed, requesting a disarm.
+            if (AP::arming().is_armed()) {
+                AP_AHRS &ahrs = AP::ahrs();
+                float hagl;
+                if(!ahrs.get_hagl(hagl)) hagl=0; ; //if we cant get info, assume the pilot isnt an idiot.
+                // get alt to check we are low enough to disarm.
+                //ensure copter is low-ish
+                if(hagl<5.0f) {
+                        if (AP::arming().disarm(AP_Arming::Method::MAVLINK_ARMDISARM_MSG,true)) {
+                            return MAV_RESULT_ACCEPTED;
+                        }
+                }
+                return MAV_RESULT_FAILED;
+            } else {
+                //not already armed. try to arm. do arming checks.
+                if ( AP::arming().arm(AP_Arming::Method::MAVLINK_ARMDISARM_MSG, true )) {
+                    return MAV_RESULT_ACCEPTED;
+                }
+                return MAV_RESULT_FAILED;
+            }
+            return MAV_RESULT_FAILED;
+        }
 
     return MAV_RESULT_UNSUPPORTED;
 }
@@ -5685,7 +5712,7 @@ void GCS_MAVLINK::send_sys_status()
     const int8_t battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
 
     if (battery.healthy() && battery.current_amps(battery_current)) {
-        battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
+        battery_current = constrain_float(battery_current * SEND_AMPS_SCALING,-INT16_MAX,INT16_MAX);
     } else {
         battery_current = -1;
     }
@@ -5714,7 +5741,7 @@ void GCS_MAVLINK::send_sys_status()
 #endif
 #if AP_BATTERY_ENABLED
         battery.gcs_voltage() * 1000,  // mV
-        battery_current,        // in 10mA units
+        battery_current,        // in 100mA units
         battery_remaining,      // in %
 #else
         0,

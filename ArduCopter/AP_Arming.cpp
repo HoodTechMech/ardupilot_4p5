@@ -67,6 +67,8 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         & winch_checks(display_failure)
         & rc_throttle_failsafe_checks(display_failure)
         & alt_checks(display_failure)
+        & follow_mode_prearm_checks(display_failure)
+        & gps_yaw_prearm_checks(display_failure)
 #if AP_AIRSPEED_ENABLED
         & AP_Arming::airspeed_checks(display_failure)
 #endif
@@ -558,7 +560,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         return false;
     }
 
-#ifndef ALLOW_ARM_NO_COMPASS
+
     // if non-compass is source of heading we can skip compass health check
     if (!ahrs.using_noncompass_for_yaw()) {
         const Compass &_compass = AP::compass();
@@ -567,8 +569,23 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
             check_failed(true, "Compass not healthy");
             return false;
         }
+    } else {
+        if(!AP::gps().have_gps_yaw(0)){
+            check_failed(true, "no heading sensor.");
+            return false;
+        } else {
+            if(!AP::gps().gps_yaw_healthy()){
+                check_failed( true, "Unhealthy GPSyaw") ;
+                return false;
+            }
+
+            if( !AP::gps().gps_yaw_boom_check()){
+                check_failed(true, "GPS Booms?") ;
+                return false;
+            }
+        }
     }
-#endif
+
 
     // always check if the current mode allows arming
     if (!copter.flightmode->allows_arming(method)) {
@@ -622,6 +639,32 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
             #endif
         }
     }
+
+        if (copter.flightmode->mode_number() == Mode::Number::FOLLOW){ //do extra checks for follow mode here
+            if(!copter.mode_follow.ready_to_arm()){
+                check_failed(true, "Follow Checks");
+                return false;
+            }
+
+        }
+#if MODE_LAUNCH_ENABLED==ENABLED
+        if (copter.flightmode->mode_number() == Mode::Number::LAUNCH){ //do extra checks for follow mode here
+            if(!copter.mode_Launch.ready_to_arm()){
+                check_failed(true, "AutoLaunch Checks");
+                return false;
+            }
+
+        }
+#endif
+
+#if MODE_RECOVERY_ENABLED==ENABLED
+        if ( (copter.flightmode->mode_number() == Mode::Number::RECOVERY_LOW) || (copter.flightmode->mode_number() == Mode::Number::RECOVERY_HIGH)) {
+            if(!copter.mode_Recovery.ready_to_arm()){
+                check_failed( true, "Recovery Checks") ;
+                return false;
+            }
+        }
+#endif
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
@@ -896,6 +939,40 @@ bool AP_Arming_Copter::gps_yaw_prearm_checks( bool display_failure)
         }
     }
     return true;
+}
+
+bool AP_Arming_Copter::follow_mode_prearm_checks( bool display_failure)
+{
+    // find follow mode as cfg mode.
+    bool followfound=false;
+    followfound = followfound || ( copter.g.flight_mode1.get() == (signed char) Mode::Number::FOLLOW );
+    followfound = followfound || ( copter.g.flight_mode2.get() == (signed char) Mode::Number::FOLLOW );
+    followfound = followfound || ( copter.g.flight_mode3.get() == (signed char) Mode::Number::FOLLOW );
+    followfound = followfound || ( copter.g.flight_mode4.get() == (signed char) Mode::Number::FOLLOW );
+    followfound = followfound || ( copter.g.flight_mode5.get() == (signed char) Mode::Number::FOLLOW );
+    followfound = followfound || ( copter.g.flight_mode6.get() == (signed char) Mode::Number::FOLLOW );
+
+    // if follow mode isnt configured as a mode, dont perform follow checks.
+    if(!followfound) return true;
+
+    if( followfound && !copter.g2.follow.enabled()) {
+        check_failed( ARMING_CHECK_FOLL , display_failure, "%s", "FOLL CFG but NOT enabled") ;
+        return false;
+    }
+
+    Vector3f prearm_offsets ;
+    if (!copter.g2.follow.follow_prearm_check(prearm_offsets)) {
+        if (prearm_offsets.z>=0) {
+           check_failed( ARMING_CHECK_FOLL , display_failure, "%s", "FOLL_OFS_Z>=0") ;
+         } else if ( prearm_offsets.x<0) {
+            check_failed(ARMING_CHECK_FOLL , display_failure, "%s", "No Follow Puck?") ;
+         } else {
+           check_failed( ARMING_CHECK_FOLL , display_failure, "%s", "FOLLLOW MODE (heading?)"  ) ;
+        }
+        return false;
+    }
+
+    return true ;
 }
 
 #pragma GCC diagnostic pop
