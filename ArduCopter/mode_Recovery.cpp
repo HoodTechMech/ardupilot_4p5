@@ -19,10 +19,6 @@ Hood Technology May 2023
  */
 bool ModeRecovery::init(bool ignore_checks)
 {
-    //DEBUG
-    _takeoff_complete=false;
-
-
     hal.console->printf("AutoRECOVERY INIT\n");
     // exit immediately if not enabled.
     if (!g2.ht_recovery.enabled()) {
@@ -92,8 +88,6 @@ bool ModeRecovery::ready_to_arm()
 //
 void ModeRecovery::run()
 {
-        if(_takeoff_complete) gcs().send_text(MAV_SEVERITY_ALERT,"taco");
-
     // if(motors->armed())     hal.console->printf("AR: armed run\n");
         // log output at 10hz
     uint32_t now = AP_HAL::millis();
@@ -115,7 +109,6 @@ void ModeRecovery::run()
     float pilot_target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     float target_climb_rate = constrain_float(pilot_target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
-    if(_takeoff_complete) gcs().send_text(MAV_SEVERITY_ALERT,"TCR:%2.1f",target_climb_rate);
     get_target_dist_and_velocity_ned( dist_vec, dist_vec_offs, vel_of_target) ;
     dist_vec -= _starting_offset_puck_NED;
     dist_vec_offs.zero();
@@ -125,19 +118,6 @@ void ModeRecovery::run()
 
     // State Machine Determination
     _state = get_aRecovery_state( target_climb_rate, _state );
-
-        AP::logger().Write( "AR4",     //log category name.
-                            "TimeUS,state,aHst,dz,doz",    //names
-                            "s--mm",   //units
-                            "F0000",   //scaling
-                            "Qbbff",   //format
-                            AP_HAL::micros64(),
-                            (int8_t) _state,
-                            (int8_t) _althold_st,
-                            dist_vec.z,
-                            dist_vec_offs.z
-                             );
-
 
     //determine if pilot is trying to pause the auto recovery.
     update_pause_state();
@@ -166,8 +146,7 @@ void ModeRecovery::run()
             break;
         case RecoveryState::TakeOff:
             //run takeoff logic
-            run_TakeOff(desired_velocity_neu_cms,vel_of_target);
-            return;
+            run_TakeOff(desired_velocity_neu_cms,vel_of_target,dist_vec);
             break ;
         case RecoveryState::GaffHover: FALLTHROUGH;
         case RecoveryState::Hover:
@@ -359,71 +338,32 @@ void ModeRecovery::calc_offsets_with_pause( bool allow_nudging, Vector3f &dist_v
 ModeRecovery::RecoveryState ModeRecovery::get_aRecovery_state( float target_climb_rate_cms, ModeRecovery::RecoveryState prevstate)
 {
 
-    
+
     // if(!_takeoff_initiated) {
     //     if (target_climb_rate_cms>(-25)) {
     //         target_climb_rate_cms=g.pilot_speed_up;
     //     }
     // } else { target_climb_rate_cms = -g.pilot_speed_up; }
 
-    if(motors->armed()){
         if (target_climb_rate_cms<(-25)) {
             _althold_st = get_alt_hold_state(target_climb_rate_cms);
         } else {
             target_climb_rate_cms= g.pilot_speed_up;
             _althold_st = get_alt_hold_state( g.pilot_speed_up);
         }
-    } else {
-        _althold_st = AltHoldModeState::MotorStopped;
 
-    }
-
-
-        AP::logger().Write( "ARST",     //log category name.
-                            "TimeUS,tcr,aHsT,toi,armed,lndCmp,pSt,nSt",    //names
-                            "sn------",   //units
-                            "FB000000",   //scaling
-                            "Qfbbbbbb",   //format
+        AP::logger().Write( "AHSR",     //log category name.
+                            "TimeUS,tcr,aHsT",    //names
+                            "sn-",   //units
+                            "FB0",   //scaling
+                            "Qfb",   //format
                             AP_HAL::micros64(),
                             target_climb_rate_cms,
-                            (int8_t) _althold_st,
-                            (int8_t)_takeoff_initiated,
-                            (int8_t)motors->armed(),
-                            (int8_t)copter.ap.land_complete,
-                            (int8_t)prevstate,
-                            (int8_t)_next_state
+                            (int8_t) _althold_st
                              );
-
     switch( _althold_st ){
         case AltHoldModeState::Takeoff:
-            switch(_next_state){
-                case RecoveryState::TakeOff:
-                    switch(prevstate)
-                    {
-                        case RecoveryState::OnTheGround:
-                            start_Takeoff();
-                            return RecoveryState::TakeOff ;
-                            break;
-                        case RecoveryState::Land: FALLTHROUGH;
-                        case RecoveryState::SpoolDown:
-                            check_for_landing();
-                            return prevstate;
-                            break;
-                        default:
-                            return RecoveryState::TakeOff ;
-                    }
-                    break;
-                case RecoveryState::ClimbToHover:
-                    start_ClimbToHover();
-                    return RecoveryState::ClimbToHover;
-                    break;
-                default:
-                    //dont know how this happens yet.
-                    return _next_state;
-
-            }
-
-            break;
+            return RecoveryState::TakeOff;
         case AltHoldModeState::Flying:
         {
             if(_next_state == RecoveryState::ContinuePrevSt) {
@@ -433,10 +373,8 @@ ModeRecovery::RecoveryState ModeRecovery::get_aRecovery_state( float target_clim
                 _vel_change_counter = VEL_TRANS_COUNT;
                 _current_state_time = 0 ;
 
-                //use prevst to hold _next_state, so I can reset _next_state;
-                prevstate = _next_state;
-                _next_state = RecoveryState::ContinuePrevSt;
-                switch(prevstate)
+
+                switch(_next_state)
                 {
                     case RecoveryState::ManualLand:
                         start_manualLand();
@@ -471,11 +409,13 @@ ModeRecovery::RecoveryState ModeRecovery::get_aRecovery_state( float target_clim
                     case RecoveryState::Hover:
                         start_Hover();
                         break;
-                    case RecoveryState::ClimbToHover:
-                        start_ClimbToHover() ;
-                        break;
-                   default: break;//either RecoveryState::TakeOff or Grounded.
+                    default:
+                        start_ClimbToHover();
+                        break;//either RecoveryState::TakeOff or Grounded.
                 }
+                //use prevst to hold _next_state, so I can reset _next_state;
+                prevstate = _next_state;
+                _next_state = RecoveryState::ContinuePrevSt;
                 return prevstate;
             }
             break ;
@@ -712,10 +652,17 @@ void ModeRecovery::start_manualLand(void)
 
 void ModeRecovery::run_aRecovery_OnGround( Vector3f &vel_neu_cms )
 {
+        attitude_control->reset_yaw_target_and_rate(false);
         attitude_control->reset_rate_controller_I_terms();
+
+        loiter_nav->init_target();
+        loiter_nav->set_pilot_desired_acceleration(0, 0);
+        loiter_nav->clear_pilot_desired_acceleration();
 
         pos_control->set_externally_limited_xy();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+
+        loiter_nav->init_target( );
 
         if(is_maritime()) g2.follow.zero_pilot_offsets();
 
@@ -814,15 +761,6 @@ void ModeRecovery::check_if_state_complete( void )
     if(!get_V3f_to_current_target_pos(diffvec)) return; //not to the puck but to where we want to be.
 
     switch (_state) {
-        case RecoveryState::TakeOff:
-            if(diffvec.z>-8){
-                gcs().send_text(MAV_SEVERITY_ALERT,"Dz=%2.3f",diffvec.z);
-            }
-            if(diffvec.z>=-5) {
-                gcs().send_text(MAV_SEVERITY_ALERT,"go CtH");
-                _next_state=RecoveryState::ClimbToHover;
-            }
-            break ;
         case RecoveryState::ClimbToHover:
             if((diffvec.z > (-0.8*fabsf(_slow_down_z_dist))) && (_vel_change_counter<=0)) {
                 _next_state = RecoveryState::Hover;
@@ -1044,7 +982,7 @@ bool ModeRecovery::rope_impact_check(bool init)
 
     bool impact = false;
     //calc copter lean from roll/pitch in centideg
-    float target_lean = safe_sqrt(powf(pos_control->get_pitch_cd(),2) + 
+    float target_lean = safe_sqrt(powf(pos_control->get_pitch_cd(),2) +
                                 powf(pos_control->get_roll_cd(),2) );
 
     //these variables are mostly for logging, if logging gets eliminated, they could get eliminated too.
@@ -1180,28 +1118,31 @@ bool ModeRecovery::check_parameters(void)
     return true;
 }
 
-void ModeRecovery::run_TakeOff( Vector3f &desired_velocity_neu_cms, Vector3f &targ_veh_vel)
+void ModeRecovery::run_TakeOff( Vector3f &desired_velocity_neu_cms, Vector3f &targ_veh_vel, Vector3f dist_vec)
 {
-float target_climb_rate;
+    float target_climb_rate;
     // if takeoff isnt running yet, check that we are ready to go, then start takeoff.
     if( !takeoff.running()) {
-
         // start takeoff by calling for motors up.
         takeoff.start(constrain_float(g.pilot_takeoff_alt,TAKEOFF_MIN_ALT,TAKEOFF_MAX_ALT));
     }
-// constrain target climb rate with user specified speed.
-    target_climb_rate = constrain_float( _override_velocity_z_cms_neu, 0, g.pilot_speed_up);
+    // constrain target climb rate with user specified speed.
+    target_climb_rate = constrain_float( g.pilot_speed_up, 0, g.pilot_speed_up);
 
     // get take-off adjusted pilot and takeoff climb rates
-    takeoff.do_pilot_takeoff(target_climb_rate,true); 
+    takeoff.do_pilot_takeoff(target_climb_rate,true);
 
-            // yes this is the same as the default case, but I dont want to allow pause on takeoff.
-            desired_velocity_neu_cms.x = targ_veh_vel.x * 100 ; //convert m/s to cm/s
-            desired_velocity_neu_cms.y = targ_veh_vel.y * 100 ; //convert m/s to cm/s
-            desired_velocity_neu_cms.z = target_climb_rate;
-        _takeoff_complete = !copter.ap.land_complete && !takeoff.running();
-        if(_takeoff_complete) gcs().send_text(MAV_SEVERITY_ALERT,"TO comp");
-            gcs().send_text(MAV_SEVERITY_ALERT,"rTO");
+    // match target velocities to the target, and target a gentle ascent rate.
+    desired_velocity_neu_cms.x = (targ_veh_vel.x * 100.0f);
+    desired_velocity_neu_cms.y = (targ_veh_vel.y * 100.0f);
+    desired_velocity_neu_cms.z = (target_climb_rate);  //positive because guided mode vel controller is NEU not NED...like the rest of follow? wtf?
+
+    // just in case it gets in the air, but doesnt go through the normal progression of grd->TO-?flying
+    if(dist_vec.z > 2) {
+        takeoff.stop();
+        gcs().send_text(MAV_SEVERITY_WARNING, "force InitAsc");
+        _next_state = RecoveryState::ClimbToHover;
+    }
 }
 
 bool ModeRecovery::state_time_elapsed(void)

@@ -601,7 +601,6 @@ bool Mode::_TakeOff::triggered(const float target_climb_rate) const
     }
 
     if (copter.motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
-        copter.gcs().send_text(MAV_SEVERITY_DEBUG,"wait on spool");
         // hold aircraft on the ground until rotor speed runup has finished
         return false;
     }

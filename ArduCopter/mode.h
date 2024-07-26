@@ -2122,7 +2122,7 @@ private:
 
     // state runs
     void run_aRecovery_OnGround(Vector3f &des_vel_neu_cms);
-    void run_TakeOff(Vector3f &des_vel_neu_cms, Vector3f &targ_vel);
+    void run_TakeOff(Vector3f &des_vel_neu_cms, Vector3f &targ_vel, Vector3f dist_vec);
 
     // state starts
     void start_Takeoff(void);
@@ -2162,7 +2162,6 @@ private:
 
     //debug
     AltHoldModeState    _althold_st;
-    bool                _takeoff_complete;
 };
 #endif
 
